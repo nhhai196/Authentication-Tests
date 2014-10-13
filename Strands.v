@@ -15,6 +15,7 @@
 (* Add LoadPath "./Classical_Wf". *)
 Require Import Classical.
 Require Import Message_Algebra.
+Require Import Lists.ListSet.
 
 (** * The signature (vocabulary) for the models *)
 (*  *************************************** *)
@@ -27,6 +28,9 @@ Variable recv : node -> Prop.
 Variable msg_of : node -> msg.  
 Variable msg_deliver : node -> node -> Prop.
 Variable ssucc : node ->  node -> Prop.
+Variable regular_strand : set strand.
+(* Variable penetrable_strand : Set. *)
+Variable strand_of: node -> strand. 
 
 (* not needed here...do it in protocol specs *)
 (* Variable role_of: strand -> role.   (** maybe should be a relation *) *)
@@ -115,6 +119,81 @@ Definition unique : msg -> Prop :=
     (forall  (n n':node),
       (orig_at n m) /\ (orig_at n' m) ->
       n=n').
+
+(** ***Penetrable keys and safe keys *)
+
+(** Notion of component *)
+(* *** Concatenated terms or messages *)
+Inductive concat : (msg -> Prop) := 
+  | encryp : forall  m1 m2, concat (P m1 m2).
+
+Definition comp : msg -> msg -> Prop :=
+  fun (m0 : msg ) (m :msg) => 
+    ingred m0 m /\ 
+    ~(concat m0)  /\
+    (forall (m1 : msg), (m0 <> m1) /\ (ingred  m0 m1) /\ (ingred m1 m) -> (concat m1)).
+
+(* *** Component of a node : say t is a component of a node n if t is a component of msg_of (n) *)
+Definition comp_of_node : msg -> node -> Prop :=
+  fun (m : msg) (n : node) => comp m (msg_of n).
+
+(* *** New at : A message msg is new at a node n = <s,i> if t is a component of msg_of(n) and
+t is not a component of any node <s,j> for every j < i *)
+Definition new_at : msg -> node -> Prop :=
+  fun (m : msg) (n : node) => comp_of_node m n /\ 
+                              (forall (n' : node) , ssuccseq n n' /\ ~(comp_of_node m n')).
+
+(** Transfroming edge *) 
+(* Should we define edge first, then transforming edge : msg -> edge -> Prop *)
+Definition transforming_edge : msg -> node -> node -> Prop :=
+  fun (m: msg) (n1 n2 : node) =>  ssuccseq n1 n2 /\ 
+                                  recv (n1) /\ 
+                                  xmit(n2) /\
+                                  (ingred m (msg_of n1)) /\
+                                  (exists t2, new_at t2 n2 /\ ingred m t2).
+(* Similarly for transformed edge *)
+Definition transformed_edge : msg -> node -> node -> Prop :=
+  fun (m: msg) (n1 n2 : node) => ssuccseq n1 n2 /\ 
+                                 xmit (n1) /\ 
+                                 recv(n2) /\
+                                 ingred m (msg_of n1) /\
+                                 exists t2, new_at t2 n2 /\ ingred m t2.
+
+(** Regular node *)
+Definition regular_node : node -> Prop :=
+  fun (n : node) => exists s, set_In s regular_strand /\ s = strand_of n.
+                                  
+(** Test component *)
+(* Here we need the notions of regular nodes *)
+Definition test_component : msg -> msg -> node -> Prop :=
+  fun (a t : msg) (n : node) => exists h k, t = (E h k) /\
+                                ingred a t /\ 
+                                comp_of_node t n /\
+                                forall (n' : node), regular_node n' /\
+                                                   (forall c, comp_of_node c n' -> ~(ingred t c /\ t <> c)).
+
+Variable P : set key.
+Definition test_for : msg -> node -> node -> Prop :=
+  fun (a : msg) (n0 n1 : node) => orig_at n0 a /\ 
+                                  unique a /\
+                                  transformed_edge a n0 n1. 
+ 
+(** Incoming test *)
+Definition  incoming_test : msg -> msg -> node -> node -> Prop := 
+  fun (a t : msg) (n0 n1 : node) => exists h K, t = (E h K) /\
+                                    set_In K P /\ 
+                                    test_for a n0 n1 /\
+                                    test_component a t n1. 
+
+(** Anthentication test *)
+Lemma Authentication_test_2 : 
+  forall (n n' : node) (a t : msg),
+   ssuccseq n n' /\ incoming_test a t n n' -> 
+   exists (m m' : node), regular_node m /\
+                         regular_node m' /\ 
+                         comp_of_node t m' /\ 
+                         transforming_edge a m m'.
+
 
 
 (* (*  Need this? *) *)
