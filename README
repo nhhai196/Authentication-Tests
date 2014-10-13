@@ -1,0 +1,17 @@
+Time-stamp: <Mon 7/7/14 15:05 Dan Dougherty README>
+
+First attempts at formalizing strand spaces in Coq.
+
+Certainly needs a lot of work; I'm just learning Coq.
+
+Currently have: basic definitions, and one non-trivial proof: that
+ingredients must originate.
+
+Next TODO:  formalize a protocol and prove something.
+
+The file "go" is a script that compiles and makes a pdf.
+(You'll have to make it executable)
+It currently doesn't print the proofs in the pdf. 
+Uncomment the obvious lines in go to print proofs.
+
+
