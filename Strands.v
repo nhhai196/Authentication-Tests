@@ -1,5 +1,12 @@
-(* Time-stamp: <Mon 7/7/14 14:12 Dan Dougherty Strands.v> *)
+(* Time-stamp: <Fri 10/17/14 10:52 Dan Dougherty Strands.v> *)
 
+(* TO FIX:
+
+ - better name for "path", "is_path", ...
+
+ - can we avoid the default-value trick in the "ith" function?
+
+*)
 (* Things to learn how to do:
 
  1) once you prove "exists x, blah(x)"
@@ -199,25 +206,28 @@ Definition  incoming_test : msg -> msg -> node -> node -> Prop :=
 (* The noation m |--> n means 
 + either m =>+ n with msg_of(m) negative and msg_of(n) positive, or else 
 + m --> n *)
-Inductive edge_path (m n : node) : Prop :=
-  | edge_path_single :  msg_deliver m n -> edge_path m n
-  | edge_path_double : ssuccs m n /\ recv(m) /\ xmit(n) -> edge_path m n.
+Inductive path_condition (m n : node) : Prop :=
+  | path_condition_single :  msg_deliver m n -> path_condition m n
+  | path_condition_double : ssuccs m n /\ recv(m) /\ xmit(n) -> path_condition m n.
 
 (** * Path *)
-Definition path := list node.
+
+(** MAYBE WE CAN AVOID THIS?? *)
+Variable default : node. 
 
 (** *** ith node of a path *)
-Variable default : node. 
-Definition ith : nat -> path -> node :=
-  fun (n:nat) (p:path) => nth n p default.
+Definition ith : nat -> list node -> node :=
+  fun (n:nat) (p:list node) => nth n p default.
 
 (** ** Axioms for paths *)
-Axiom path_edges : forall (n:nat) (p:path), 
-                     (lt n ((length p)-1)) -> 
-                     edge_path (ith n p) (ith (n+1) p).
+Definition is_path : list node -> Prop :=
+  fun  (p: list node) => forall (n : nat), 
+    (lt n ((length p)-1)) -> 
+    path_condition (ith n p ) (ith (n+1) p ).
   
 (* All paths begin on a positive node and end on a negative node *)
-Axiom path_begin_pos_end_neg : forall (p : path), xmit(ith 0 p) /\ recv(ith ((length p)-1)  p).
+Axiom path_begin_pos_end_neg : forall (p : list node),
+  (is_path p) -> xmit(ith 0 p) /\ recv(ith ((length p)-1)  p).
 
 (** ** Penetrator paths *)
 
@@ -653,6 +663,9 @@ Theorem induct_ok :
     (forall (x:node), (forall (y:node), prec y x -> P y) -> P x) -> 
                       forall (x:node), P x.
 Proof.
-Check well_founded_ind.
+(* Check well_founded_ind. *)
 apply well_founded_ind.
 exact wf_prec.
+Qed.
+
+
