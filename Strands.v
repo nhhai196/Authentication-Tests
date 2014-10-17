@@ -37,7 +37,7 @@ Variable msg_of : node -> msg.
 Variable msg_deliver : node -> node -> Prop.
 Variable ssucc : node ->  node -> Prop.
 Variable regular_strand : set strand.
-(* Variable penetrable_strand : Set. *)
+Variable penetrable_strand : set strand.
 Variable strand_of: node -> strand. 
 
 (* not needed here...do it in protocol specs *)
@@ -170,6 +170,10 @@ Definition transformed_edge : msg -> node -> node -> Prop :=
 (** Regular node *)
 Definition regular_node : node -> Prop :=
   fun (n : node) => exists s, set_In s regular_strand /\ s = strand_of n.
+
+(** Penetrator node *)
+Definition penetrator_node : node -> Prop :=
+  fun (n:node) => exists s, set_In s penetrable_strand /\ s = strand_of n.
                                   
 (** Test component *)
 (* Here we need the notions of regular nodes *)
@@ -230,6 +234,18 @@ Axiom path_begin_pos_end_neg : forall (p : list node),
   (is_path p) -> xmit(ith 0 p) /\ recv(ith ((length p)-1)  p).
 
 (** ** Penetrator paths *)
+Definition p_path : list node -> Prop := 
+  fun (p:list node) => is_path p /\ forall (n:nat), lt 0 n /\ lt n (length p - 1) -> 
+                       penetrator_node (ith n p).
+
+(** ** Falling and raising paths *)
+Definition rasing : list node -> Prop := 
+  fun (p:list node) => is_path p /\ forall n, lt n (length p - 1) -> 
+                       ingred (msg_of (ith n p)) (msg_of (ith (n+1) p)).
+
+Definition falling : list node -> Prop := 
+  fun (p:list node) => is_path p /\ forall n, lt n (length p - 1) -> 
+                       ingred (msg_of (ith n p)) (msg_of (ith (n+1) p)).
 
 (* (*  Need this? *) *)
 
