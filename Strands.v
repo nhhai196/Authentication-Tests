@@ -16,6 +16,7 @@
 Require Import Classical.
 Require Import Message_Algebra.
 Require Import Lists.ListSet.
+Require Import Lists.List.
 
 (** * The signature (vocabulary) for the models *)
 (*  *************************************** *)
@@ -172,7 +173,7 @@ Definition test_component : msg -> msg -> node -> Prop :=
                                 forall (n' : node), regular_node n' /\
                                                    (forall c, comp_of_node c n' -> ~(ingred t c /\ t <> c)).
 
-Variable P : set key.
+Variable PK : set key.
 Definition test_for : msg -> node -> node -> Prop :=
   fun (a : msg) (n0 n1 : node) => orig_at n0 a /\ 
                                   unique a /\
@@ -181,20 +182,44 @@ Definition test_for : msg -> node -> node -> Prop :=
 (** Incoming test *)
 Definition  incoming_test : msg -> msg -> node -> node -> Prop := 
   fun (a t : msg) (n0 n1 : node) => exists h K, t = (E h K) /\
-                                    set_In K P /\ 
+                                    set_In K PK /\ 
                                     test_for a n0 n1 /\
                                     test_component a t n1. 
 
 (** Anthentication test *)
-Lemma Authentication_test_2 : 
+(* Lemma Authentication_test_2 : 
   forall (n n' : node) (a t : msg),
    ssuccseq n n' /\ incoming_test a t n n' -> 
    exists (m m' : node), regular_node m /\
                          regular_node m' /\ 
                          comp_of_node t m' /\ 
                          transforming_edge a m m'.
+*)
+(** * Penetrator paths and normal bundles *)
+(* The noation m |--> n means 
++ either m =>+ n with msg_of(m) negative and msg_of(n) positive, or else 
++ m --> n *)
+Inductive edge_path (m n : node) : Prop :=
+  | edge_path_single :  msg_deliver m n -> edge_path m n
+  | edge_path_double : ssuccs m n /\ recv(m) /\ xmit(n) -> edge_path m n.
 
+(** * Path *)
+Definition path := list node.
 
+(** *** ith node of a path *)
+Variable default : node. 
+Definition ith : nat -> path -> node :=
+  fun (n:nat) (p:path) => nth n p default.
+
+(** ** Axioms for paths *)
+Axiom path_edges : forall (n:nat) (p:path), 
+                     (lt n ((length p)-1)) -> 
+                     edge_path (ith n p) (ith (n+1) p).
+  
+(* All paths begin on a positive node and end on a negative node *)
+Axiom path_begin_pos_end_neg : forall (p : path), xmit(ith 0 p) /\ recv(ith ((length p)-1)  p).
+
+(** ** Penetrator paths *)
 
 (* (*  Need this? *) *)
 
@@ -620,3 +645,14 @@ Notation " x <<= y " := (preceq x y) (at level 50).
 (** printing <<= $\preceq$ *) 
 
 *)
+
+
+(** * Induction *) 
+Theorem induct_ok : 
+  forall (P:node -> Prop), 
+    (forall (x:node), (forall (y:node), prec y x -> P y) -> P x) -> 
+                      forall (x:node), P x.
+Proof.
+Check well_founded_ind.
+apply well_founded_ind.
+exact wf_prec.
