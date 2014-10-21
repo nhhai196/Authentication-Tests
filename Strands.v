@@ -167,6 +167,27 @@ Definition transformed_edge : msg -> node -> node -> Prop :=
                                  ingred m (msg_of n1) /\
                                  exists t2, new_at t2 n2 /\ ingred m t2.
 
+(* Transformation path *)
+Variable default_pair :prod node msg.
+Definition is_trans_path : list (prod node msg)->Prop := 
+  fun (p:list (prod node msg)) => 
+  (forall (n:nat), lt n (length p) -> comp_of_node (snd (nth n p default_pair)) (fst (nth n p default_pair))) /\
+  (forall (n:nat),lt n (length p - 1) /\ 
+                  snd (nth n p default_pair) <> snd (nth (n+1) p default_pair) /\
+                  forall a, ingred a (snd (nth n p default_pair)) /\ ingred a (snd (nth (n+1) p default_pair)) ->
+                  transforming_edge a (fst (nth n p default_pair)) (fst (nth (n+1) p default_pair))).
+
+(* Proposition 11 *)
+Lemma proposition11 : 
+  forall (a t:msg) (n':node), 
+    ingred a t /\ comp_of_node t n' -> 
+    exists p, is_trans_path p /\ 
+              orig_at (fst (nth 0 p default_pair)) a /\
+              fst (nth (length p - 1) p default_pair) = n' /\ 
+              snd (nth (length p -1) p default_pair) = t /\
+              forall (i:nat), lt i (length p) -> ingred a (snd (nth i p default_pair)).
+                  
+
 (** Regular node *)
 Definition regular_node : node -> Prop :=
   fun (n : node) => exists s, set_In s regular_strand /\ s = strand_of n.
@@ -245,7 +266,7 @@ Definition rasing : list node -> Prop :=
 
 Definition falling : list node -> Prop := 
   fun (p:list node) => is_path p /\ forall n, lt n (length p - 1) -> 
-                       ingred (msg_of (ith n p)) (msg_of (ith (n+1) p)).
+                       ingred (msg_of (ith (n+1) p)) (msg_of (ith n p)).
 
 (* (*  Need this? *) *)
 
