@@ -98,7 +98,7 @@ Inductive preceq  (x z: node) : Prop :=
   | preceq_trans : prec x z -> preceq x z.
 
 
-(** Miimal nodes *)
+(** Minimal nodes *)
 
 Definition is_minimal: (node -> Prop) -> node -> Prop :=
   fun P x => (P x) /\ forall y, (prec y x) -> ~( P y).
@@ -176,17 +176,7 @@ Definition is_trans_path : list (prod node msg)->Prop :=
                   snd (nth n p default_pair) <> snd (nth (n+1) p default_pair) /\
                   forall a, ingred a (snd (nth n p default_pair)) /\ ingred a (snd (nth (n+1) p default_pair)) ->
                   transforming_edge a (fst (nth n p default_pair)) (fst (nth (n+1) p default_pair))).
-
-(* Proposition 11 *)
-Lemma proposition11 : 
-  forall (a t:msg) (n':node), 
-    ingred a t /\ comp_of_node t n' -> 
-    exists p, is_trans_path p /\ 
-              orig_at (fst (nth 0 p default_pair)) a /\
-              fst (nth (length p - 1) p default_pair) = n' /\ 
-              snd (nth (length p -1) p default_pair) = t /\
-              forall (i:nat), lt i (length p) -> ingred a (snd (nth i p default_pair)).
-                  
+                 
 
 (** Regular node *)
 Definition regular_node : node -> Prop :=
@@ -267,6 +257,25 @@ Definition rasing : list node -> Prop :=
 Definition falling : list node -> Prop := 
   fun (p:list node) => is_path p /\ forall n, lt n (length p - 1) -> 
                        ingred (msg_of (ith (n+1) p)) (msg_of (ith n p)).
+
+Lemma backward_construction : forall (n:node) (a L:msg), comp_of_node L n /\ ~ orig_at n a ->
+                                            exists (n':node) (L':msg), path_condition n n'.
+Proof.
+Admitted.
+
+(*Proposition 11 *)
+Lemma proposition11 : 
+  forall (n':node), forall (a t:msg), 
+    ingred a t /\ comp_of_node t n' -> 
+    exists p, is_trans_path p /\ 
+              orig_at (fst (nth 0 p default_pair)) a /\
+              fst (nth (length p - 1) p default_pair) = n' /\ 
+              snd (nth (length p -1) p default_pair) = t /\
+              forall (i:nat), lt i (length p) -> ingred a (snd (nth i p default_pair)).
+Proof.
+Admitted.
+
+
 
 (* (*  Need this? *) *)
 
