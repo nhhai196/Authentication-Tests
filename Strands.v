@@ -590,26 +590,29 @@ Definition comp_of_node : msg -> node -> Prop :=
 if t is a component of msg_of(n) and
 t is not a component of any node <s,j> for every j < i *)
 Definition new_at : msg -> node -> Prop :=
-  fun (m : msg) (n : node) => comp_of_node m n /\ 
-                              (forall (n' : node) , ssuccseq n n' /\ ~(comp_of_node m n')).
+  fun (m : msg) (n : node) => 
+  comp_of_node m n /\ 
+  (forall (n' : node) , ssuccseq n n' /\ ~(comp_of_node m n')).
 
 
 (** Transfroming edge *) 
 (* Should we define edge first, 
 then transforming edge : msg -> edge -> Prop *)
 Definition transforming_edge : msg -> node -> node -> Prop :=
-  fun (m: msg) (n1 n2 : node) =>  ssuccseq n1 n2 /\ 
-                                  recv (n1) /\ 
-                                  xmit(n2) /\
-                                  (ingred m (msg_of n1)) /\
-                                  (exists t2, new_at t2 n2 /\ ingred m t2).
+  fun (m: msg) (n1 n2 : node) =>  
+  ssuccseq n1 n2 /\ 
+  recv (n1) /\ 
+  xmit(n2) /\
+  (ingred m (msg_of n1)) /\
+  (exists t2, new_at t2 n2 /\ ingred m t2).
 (* Similarly for transformed edge *)
 Definition transformed_edge : msg -> node -> node -> Prop :=
-  fun (m: msg) (n1 n2 : node) => ssuccseq n1 n2 /\ 
-                                 xmit (n1) /\ 
-                                 recv(n2) /\
-                                 ingred m (msg_of n1) /\
-                                 exists t2, new_at t2 n2 /\ ingred m t2.
+  fun (m: msg) (n1 n2 : node) => 
+  ssuccseq n1 n2 /\ 
+  xmit (n1) /\ 
+  recv(n2) /\
+  ingred m (msg_of n1) /\
+  exists t2, new_at t2 n2 /\ ingred m t2.
 Check (list node).
 
 (** Regular node *)
@@ -623,11 +626,12 @@ Definition penetrator_node : node -> Prop :=
 (** Test component *)
 (* Here we need the notions of regular nodes *)
 Definition test_component : msg -> msg -> node -> Prop :=
-  fun (a t : msg) (n : node) => exists h k, t = (E h k) /\
-                                ingred a t /\ 
-                                comp_of_node t n /\
-                                forall (n' : node), regular_node n' /\
-                                                   (forall c, comp_of_node c n' -> ~(ingred t c /\ t <> c)).
+  fun (a t : msg) (n : node) => 
+  exists h k, t = (E h k) /\
+  ingred a t /\ 
+  comp_of_node t n /\
+  forall (n' : node), regular_node n' /\
+  (forall c, comp_of_node c n' -> ~(ingred t c /\ t <> c)).
 
 Variable PK : set key.
 Definition test_for : msg -> node -> node -> Prop :=
@@ -657,12 +661,16 @@ Definition  incoming_test : msg -> msg -> node -> node -> Prop :=
 + m --> n *)
 Inductive path_condition (m n : node) : Prop :=
   | path_condition_single :  msg_deliver m n -> path_condition m n
-  | path_condition_double : ssuccs m n /\ recv(m) /\ xmit(n) -> path_condition m n.
+  | path_condition_double : ssuccs m n /\ 
+                            recv(m) /\ 
+                            xmit(n) -> 
+                            path_condition m n.
 
 Hint Constructors path_condition.
 
 (* path_condition implies prec *)
-Lemma path_imp_prec : forall (m n:node), path_condition m n -> prec m n.
+Lemma path_imp_prec : 
+  forall (m n:node), path_condition m n -> prec m n.
 Proof.
 intros.
 apply path_condition_ind with (m:=m) (n:=n).
@@ -712,15 +720,24 @@ Variable default_pair :prod node msg.
 Definition is_trans_path : list (prod node msg)->Prop := 
   fun (p:list (prod node msg)) => 
   (forall (n:nat), lt n (length p) -> 
-  comp_of_node (snd (nth n p default_pair)) (fst (nth n p default_pair))) /\
-  forall (n:nat), lt n (length p - 1) ->  path_condition (fst (nth n p default_pair)) (fst (nth (n+1) p default_pair)) /\
-  forall (n:nat) (a:msg),(lt n (length p - 1) /\ 
-                 snd (nth n p default_pair) <> snd (nth (n+1) p default_pair) /\
-                 ingred a (snd (nth n p default_pair)) /\ ingred a (snd (nth (n+1) p default_pair))) ->
-                 transforming_edge a (fst (nth n p default_pair)) (fst (nth (n+1) p default_pair)).
+    comp_of_node (snd (nth n p default_pair)) 
+                 (fst (nth n p default_pair))) /\
+  forall (n:nat), 
+    lt n (length p - 1) ->  
+    path_condition (fst (nth n p default_pair)) 
+                   (fst (nth (n+1) p default_pair)) /\
+  forall (n:nat) (a:msg),
+   (lt n (length p - 1) /\ 
+   snd (nth n p default_pair) <> snd (nth (n+1) p default_pair) /\
+   ingred a (snd (nth n p default_pair)) /\ 
+   ingred a (snd (nth (n+1) p default_pair))) ->
+   transforming_edge a (fst (nth n p default_pair)) 
+                       (fst (nth (n+1) p default_pair)).
 
 (* Baby result : a single pair (n, L) is a trans-foramtion path *)
-Lemma anode_trans_path : forall (n:node) (t:msg), comp_of_node t n -> is_trans_path (cons (n,t) nil).
+Lemma anode_trans_path : 
+  forall (n:node) (t:msg), 
+  comp_of_node t n -> is_trans_path (cons (n,t) nil).
 Proof.
 intros.
 unfold is_trans_path.
@@ -748,28 +765,35 @@ elim H5.
 Qed.              
 
 Lemma concat_trans_path : 
-  forall p n L a,(is_trans_path p /\
-                comp_of_node L n /\
-                path_condition (fst (nth (length p -1) p default_pair)) n /\
-                (snd (nth (length p -1) p default_pair) <> L /\
-                ingred a (snd (nth (length p -1) p default_pair)) /\
-                ingred a L -> transforming_edge a (fst(nth (length p -1) p default_pair)) n)) ->
-                is_trans_path (p ++ (cons (n,L) nil)).
+  forall p n L a,
+    (is_trans_path p /\
+    comp_of_node L n /\
+    path_condition (fst (nth (length p -1) p default_pair)) n /\
+    (snd (nth (length p -1) p default_pair) <> L /\
+    ingred a (snd (nth (length p -1) p default_pair)) /\
+    ingred a L -> 
+    transforming_edge a (fst(nth (length p -1) p default_pair)) n)) ->
+    is_trans_path (p ++ (cons (n,L) nil)).
 Proof. 
 Admitted.
 
+
+(* Some basic results for lists *)
 Lemma fst_eq : forall (l1 l2:list (prod node msg)), 
-                   nth 0 (l1++l2) default_pair = nth 0 l1 default_pair.
+               nth 0 (l1++l2) default_pair = nth 0 l1 default_pair.
 Proof. 
 Admitted.
 
-Lemma ignore_lasts : forall l1 l2, forall (i:nat),
-                     lt i (length l1) -> nth i (l1++l2) default_pair = nth i l1 default_pair.
+(* TODO : l1 has to be non-empty *)
+Lemma ignore_lasts : 
+  forall l1 l2, forall (i:nat),
+  lt i (length l1) -> nth i (l1++l2) default_pair = nth i l1 default_pair.
 Proof.
 Admitted.
 
-Lemma last_elem : forall (l1 : list (prod node msg)) x t, 
-                  nth (length (l1++(x,t)::nil) - 1) (l1++(x,t)::nil) default_pair = (x,t).
+Lemma last_elem : 
+  forall (l1 : list (prod node msg)) x t, 
+  nth (length (l1++(x,t)::nil) - 1) (l1++(x,t)::nil) default_pair = (x,t).
 Proof.
 Admitted.
 
