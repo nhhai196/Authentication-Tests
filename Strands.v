@@ -586,6 +586,35 @@ of a node n if t is a component of msg_of (n) *)
 Definition comp_of_node : msg -> node -> Prop :=
   fun (m : msg) (n : node) => comp m (msg_of n).
 
+(* Basic results *)
+Lemma comp_imp_ingred : forall (m1 m2:msg), comp m1 m2 -> ingred m1 m2.
+Proof.
+intros.
+unfold comp in H.
+apply H.
+Qed.
+
+Lemma comp_of_node_imp_ingred : 
+  forall (m:msg) (n:node), comp_of_node m n -> ingred m (msg_of n).
+Proof.
+intros.
+unfold comp_of_node in H.
+apply comp_imp_ingred.
+assumption.
+Qed.
+
+Lemma msg_deliver_comp : 
+  forall (n1 n2:node) (m:msg), msg_deliver n1 n2 /\ comp_of_node m n2 -> comp_of_node m n1.
+Proof.
+intros.
+destruct H as (H1,H2).
+unfold comp_of_node.
+assert (msg_of n1 = msg_of n2).
+apply msg_deliver_ax. auto.
+rewrite H.
+unfold comp_of_node in H2. auto.
+Qed.
+
 (* *** New at : A message msg is new at a node n = <s,i> 
 if t is a component of msg_of(n) and
 t is not a component of any node <s,j> for every j < i *)
@@ -797,8 +826,27 @@ Lemma last_elem :
 Proof.
 Admitted.
 
+
+Lemma ingred_earlier : 
+  forall (n:node) (a:msg), (~ orig_at n a) /\ xmit n /\ ingred a (msg_of n) -> 
+                           exists n', ssuccs n' n /\ ingred a (msg_of n').
+Proof.
+intros.
+(*unfold not in H. unfold orig_at in H.*)
+apply Peirce.
+intros.
+apply False_ind.
+unfold not in H.
+destruct H as (H1, (H2, H3)).
+apply H1. unfold orig_at.
+split. auto. split. auto.
+intros. apply H0.
+exists n'.
+split; auto.
+Qed.
+ 
 Lemma backward_construction : 
-forall (n:node) (a L:msg), comp_of_node L n /\ ~ orig_at n a ->
+forall (n:node) (a L:msg), comp_of_node L n /\ ~ orig_at n a /\ ingred a L ->
     exists (n':node) (L':msg), path_condition n' n /\
                                ingred a L' /\ 
                                (comp_of_node L' n' /\ 
@@ -806,16 +854,39 @@ forall (n:node) (a L:msg), comp_of_node L n /\ ~ orig_at n a ->
                                ingred a L' /\ ingred a L ->
                                transforming_edge a n' n)).
 Proof.
+intros.
+assert (xmit n \/ recv n).
+apply xmit_or_recv.
+case H0.
+Focus 2.
+intros.
+assert (exists (n':node), msg_deliver n' n). 
+apply was_sent. auto.
+destruct H2 as (n', H2).
+exists n'.
+exists L.
+split. constructor. auto.
+split. apply H.
+split. apply msg_deliver_comp with (n1:=n') (n2:=n).
+split. auto. apply H.  
+intros. assert (L <> L). apply H3.
+assert False. apply H4. auto. elim H5.
+intros.
+assert (new_at L n \/ ~(new_at L n)). tauto.
+case H2.
+intros. assert (exists n', ssuccs n' n /\ ingred a (msg_of n')).
+apply ingred_earlier. repeat split; auto. apply H.
 Admitted.
 
 Definition P11 : node -> Prop := 
-  fun (n':node) => forall (a t:msg), 
-                     ingred a t /\ comp_of_node t n' -> 
-                     exists p, is_trans_path p /\ 
-                     orig_at (fst (nth 0 p default_pair)) a /\
-                     fst (nth (length p - 1) p default_pair) = n' /\ 
-                     snd (nth (length p -1) p default_pair) = t /\
-                     forall (i:nat), lt i (length p) -> ingred a (snd (nth i p default_pair)).
+  fun (n':node) => 
+  forall (a t:msg), 
+  ingred a t /\ comp_of_node t n' -> 
+  exists p, is_trans_path p /\ 
+  orig_at (fst (nth 0 p default_pair)) a /\
+  fst (nth (length p - 1) p default_pair) = n' /\ 
+  snd (nth (length p -1) p default_pair) = t /\
+  forall (i:nat), lt i (length p) -> ingred a (snd (nth i p default_pair)).
               
 (*Proposition 11 *)
 Lemma proposition11 : 
@@ -848,7 +919,7 @@ assert (exists (n':node) (L':msg),
           (L' <> t /\
           ingred a L' /\ ingred a t ->
           transforming_edge a n' x))).
-apply backward_construction; auto.
+apply backward_construction. auto.
 destruct H4 as (n', (L', (H4, (H5, (H6, H7))))).
 assert (forall a t : msg,
         ingred a t /\ comp_of_node t n' ->
@@ -881,7 +952,8 @@ assert ((nth 0 (p0 ++ (x, t) :: nil) default_pair)=
         (nth 0 p0 default_pair)).
 apply fst_eq.
 rewrite H9. auto.
-assert (nth (length (p0 ++ (x, t) :: nil) - 1) (p0 ++ (x, t) :: nil) default_pair = (x,t)).
+assert (nth (length (p0 ++ (x, t) :: nil) - 1) 
+       (p0 ++ (x, t) :: nil) default_pair = (x,t)).
 apply last_elem.
 rewrite H9.
 split. auto. split. auto.
