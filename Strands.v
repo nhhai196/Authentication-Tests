@@ -24,6 +24,7 @@ Require Import Classical.
 Require Import Message_Algebra.
 Require Import Lists.ListSet.
 Require Import Lists.List.
+Require Import Omega.
 
 (** * The signature (vocabulary) for the models *)
 (*  *************************************** *)
@@ -127,153 +128,6 @@ Definition unique : msg -> Prop :=
     (forall  (n n':node),
       (orig_at n m) /\ (orig_at n' m) ->
       n=n').
-
-(** ***Penetrable keys and safe keys *)
-
-(** Notion of component *)
-(* *** Concatenated terms or messages *)
-Inductive concat : (msg -> Prop) := 
-  | encryp : forall  m1 m2, concat (P m1 m2).
-
-Definition comp : msg -> msg -> Prop :=
-  fun (m0 : msg ) (m :msg) => 
-    ingred m0 m /\ 
-    ~(concat m0)  /\
-    (forall (m1 : msg), (m0 <> m1) /\ (ingred  m0 m1) /\ (ingred m1 m) -> (concat m1)).
-
-(* *** Component of a node : say t is a component of a node n if t is a component of msg_of (n) *)
-Definition comp_of_node : msg -> node -> Prop :=
-  fun (m : msg) (n : node) => comp m (msg_of n).
-
-(* *** New at : A message msg is new at a node n = <s,i> if t is a component of msg_of(n) and
-t is not a component of any node <s,j> for every j < i *)
-Definition new_at : msg -> node -> Prop :=
-  fun (m : msg) (n : node) => comp_of_node m n /\ 
-                              (forall (n' : node) , ssuccseq n n' /\ ~(comp_of_node m n')).
-
-(** Transfroming edge *) 
-(* Should we define edge first, then transforming edge : msg -> edge -> Prop *)
-Definition transforming_edge : msg -> node -> node -> Prop :=
-  fun (m: msg) (n1 n2 : node) =>  ssuccseq n1 n2 /\ 
-                                  recv (n1) /\ 
-                                  xmit(n2) /\
-                                  (ingred m (msg_of n1)) /\
-                                  (exists t2, new_at t2 n2 /\ ingred m t2).
-(* Similarly for transformed edge *)
-Definition transformed_edge : msg -> node -> node -> Prop :=
-  fun (m: msg) (n1 n2 : node) => ssuccseq n1 n2 /\ 
-                                 xmit (n1) /\ 
-                                 recv(n2) /\
-                                 ingred m (msg_of n1) /\
-                                 exists t2, new_at t2 n2 /\ ingred m t2.
-
-(* Transformation path *)
-Variable default_pair :prod node msg.
-Definition is_trans_path : list (prod node msg)->Prop := 
-  fun (p:list (prod node msg)) => 
-  (forall (n:nat), lt n (length p) -> comp_of_node (snd (nth n p default_pair)) (fst (nth n p default_pair))) /\
-  (forall (n:nat),lt n (length p - 1) /\ 
-                  snd (nth n p default_pair) <> snd (nth (n+1) p default_pair) /\
-                  forall a, ingred a (snd (nth n p default_pair)) /\ ingred a (snd (nth (n+1) p default_pair)) ->
-                  transforming_edge a (fst (nth n p default_pair)) (fst (nth (n+1) p default_pair))).
-                 
-
-(** Regular node *)
-Definition regular_node : node -> Prop :=
-  fun (n : node) => exists s, set_In s regular_strand /\ s = strand_of n.
-
-(** Penetrator node *)
-Definition penetrator_node : node -> Prop :=
-  fun (n:node) => exists s, set_In s penetrable_strand /\ s = strand_of n.
-                                  
-(** Test component *)
-(* Here we need the notions of regular nodes *)
-Definition test_component : msg -> msg -> node -> Prop :=
-  fun (a t : msg) (n : node) => exists h k, t = (E h k) /\
-                                ingred a t /\ 
-                                comp_of_node t n /\
-                                forall (n' : node), regular_node n' /\
-                                                   (forall c, comp_of_node c n' -> ~(ingred t c /\ t <> c)).
-
-Variable PK : set key.
-Definition test_for : msg -> node -> node -> Prop :=
-  fun (a : msg) (n0 n1 : node) => orig_at n0 a /\ 
-                                  unique a /\
-                                  transformed_edge a n0 n1. 
- 
-(** Incoming test *)
-Definition  incoming_test : msg -> msg -> node -> node -> Prop := 
-  fun (a t : msg) (n0 n1 : node) => exists h K, t = (E h K) /\
-                                    set_In K PK /\ 
-                                    test_for a n0 n1 /\
-                                    test_component a t n1. 
-
-(** Anthentication test *)
-(* Lemma Authentication_test_2 : 
-  forall (n n' : node) (a t : msg),
-   ssuccseq n n' /\ incoming_test a t n n' -> 
-   exists (m m' : node), regular_node m /\
-                         regular_node m' /\ 
-                         comp_of_node t m' /\ 
-                         transforming_edge a m m'.
-*)
-(** * Penetrator paths and normal bundles *)
-(* The noation m |--> n means 
-+ either m =>+ n with msg_of(m) negative and msg_of(n) positive, or else 
-+ m --> n *)
-Inductive path_condition (m n : node) : Prop :=
-  | path_condition_single :  msg_deliver m n -> path_condition m n
-  | path_condition_double : ssuccs m n /\ recv(m) /\ xmit(n) -> path_condition m n.
-
-(** * Path *)
-
-(** MAYBE WE CAN AVOID THIS?? *)
-Variable default : node. 
-
-(** *** ith node of a path *)
-Definition ith : nat -> list node -> node :=
-  fun (n:nat) (p:list node) => nth n p default.
-
-(** ** Axioms for paths *)
-Definition is_path : list node -> Prop :=
-  fun  (p: list node) => forall (n : nat), 
-    (lt n ((length p)-1)) -> 
-    path_condition (ith n p ) (ith (n+1) p ).
-  
-(* All paths begin on a positive node and end on a negative node *)
-Axiom path_begin_pos_end_neg : forall (p : list node),
-  (is_path p) -> xmit(ith 0 p) /\ recv(ith ((length p)-1)  p).
-
-(** ** Penetrator paths *)
-Definition p_path : list node -> Prop := 
-  fun (p:list node) => is_path p /\ forall (n:nat), lt 0 n /\ lt n (length p - 1) -> 
-                       penetrator_node (ith n p).
-
-(** ** Falling and raising paths *)
-Definition rasing : list node -> Prop := 
-  fun (p:list node) => is_path p /\ forall n, lt n (length p - 1) -> 
-                       ingred (msg_of (ith n p)) (msg_of (ith (n+1) p)).
-
-Definition falling : list node -> Prop := 
-  fun (p:list node) => is_path p /\ forall n, lt n (length p - 1) -> 
-                       ingred (msg_of (ith (n+1) p)) (msg_of (ith n p)).
-
-Lemma backward_construction : forall (n:node) (a L:msg), comp_of_node L n /\ ~ orig_at n a ->
-                                            exists (n':node) (L':msg), path_condition n n'.
-Proof.
-Admitted.
-
-(*Proposition 11 *)
-Lemma proposition11 : 
-  forall (n':node), forall (a t:msg), 
-    ingred a t /\ comp_of_node t n' -> 
-    exists p, is_trans_path p /\ 
-              orig_at (fst (nth 0 p default_pair)) a /\
-              fst (nth (length p - 1) p default_pair) = n' /\ 
-              snd (nth (length p -1) p default_pair) = t /\
-              forall (i:nat), lt i (length p) -> ingred a (snd (nth i p default_pair)).
-Proof.
-Admitted.
 
 
 
@@ -702,7 +556,6 @@ Notation " x <<= y " := (preceq x y) (at level 50).
 
 *)
 
-
 (** * Induction *) 
 Theorem induct_ok : 
   forall (P:node -> Prop), 
@@ -714,4 +567,409 @@ apply well_founded_ind.
 exact wf_prec.
 Qed.
 
+(** ***Penetrable keys and safe keys *)
+
+(** Notion of component *)
+(* *** Concatenated terms or messages *)
+Inductive concat : (msg -> Prop) := 
+  | encryp : forall  m1 m2, concat (P m1 m2).
+
+Definition comp : msg -> msg -> Prop :=
+  fun (m0 : msg ) (m :msg) => 
+    ingred m0 m /\ 
+    ~(concat m0)  /\
+    (forall (m1 : msg), (m0 <> m1) /\ 
+   (ingred  m0 m1) /\ (ingred m1 m) -> (concat m1)).
+
+(* *** Component of a node : say t is a component 
+of a node n if t is a component of msg_of (n) *)
+Definition comp_of_node : msg -> node -> Prop :=
+  fun (m : msg) (n : node) => comp m (msg_of n).
+
+(* Basic results *)
+Lemma comp_imp_ingred : forall (m1 m2:msg), comp m1 m2 -> ingred m1 m2.
+Proof.
+intros.
+unfold comp in H.
+apply H.
+Qed.
+
+Lemma comp_of_node_imp_ingred : 
+  forall (m:msg) (n:node), comp_of_node m n -> ingred m (msg_of n).
+Proof.
+intros.
+unfold comp_of_node in H.
+apply comp_imp_ingred.
+assumption.
+Qed.
+
+Lemma msg_deliver_comp : 
+  forall (n1 n2:node) (m:msg), msg_deliver n1 n2 /\ comp_of_node m n2 -> comp_of_node m n1.
+Proof.
+intros.
+destruct H as (H1,H2).
+unfold comp_of_node.
+assert (msg_of n1 = msg_of n2).
+apply msg_deliver_ax. auto.
+rewrite H.
+unfold comp_of_node in H2. auto.
+Qed.
+
+(* *** New at : A message msg is new at a node n = <s,i> 
+if t is a component of msg_of(n) and
+t is not a component of any node <s,j> for every j < i *)
+Definition new_at : msg -> node -> Prop :=
+  fun (m : msg) (n : node) => 
+  comp_of_node m n /\ 
+  (forall (n' : node) , ssuccseq n n' /\ ~(comp_of_node m n')).
+
+
+(** Transfroming edge *) 
+(* Should we define edge first, 
+then transforming edge : msg -> edge -> Prop *)
+Definition transforming_edge : msg -> node -> node -> Prop :=
+  fun (m: msg) (n1 n2 : node) =>  
+  ssuccseq n1 n2 /\ 
+  recv (n1) /\ 
+  xmit(n2) /\
+  (ingred m (msg_of n1)) /\
+  (exists t2, new_at t2 n2 /\ ingred m t2).
+(* Similarly for transformed edge *)
+Definition transformed_edge : msg -> node -> node -> Prop :=
+  fun (m: msg) (n1 n2 : node) => 
+  ssuccseq n1 n2 /\ 
+  xmit (n1) /\ 
+  recv(n2) /\
+  ingred m (msg_of n1) /\
+  exists t2, new_at t2 n2 /\ ingred m t2.
+Check (list node).
+
+(** Regular node *)
+Definition regular_node : node -> Prop :=
+  fun (n : node) => exists s, set_In s regular_strand /\ s = strand_of n.
+
+(** Penetrator node *)
+Definition penetrator_node : node -> Prop :=
+  fun (n:node) => exists s, set_In s penetrable_strand /\ s = strand_of n.
+                                  
+(** Test component *)
+(* Here we need the notions of regular nodes *)
+Definition test_component : msg -> msg -> node -> Prop :=
+  fun (a t : msg) (n : node) => 
+  exists h k, t = (E h k) /\
+  ingred a t /\ 
+  comp_of_node t n /\
+  forall (n' : node), regular_node n' /\
+  (forall c, comp_of_node c n' -> ~(ingred t c /\ t <> c)).
+
+Variable PK : set key.
+Definition test_for : msg -> node -> node -> Prop :=
+  fun (a : msg) (n0 n1 : node) => orig_at n0 a /\ 
+                                  unique a /\
+                                  transformed_edge a n0 n1. 
+ 
+(** Incoming test *)
+Definition  incoming_test : msg -> msg -> node -> node -> Prop := 
+  fun (a t : msg) (n0 n1 : node) => exists h K, t = (E h K) /\
+                                    set_In K PK /\ 
+                                    test_for a n0 n1 /\
+                                    test_component a t n1. 
+
+(** Anthentication test *)
+(* Lemma Authentication_test_2 : 
+  forall (n n' : node) (a t : msg),
+   ssuccseq n n' /\ incoming_test a t n n' -> 
+   exists (m m' : node), regular_node m /\
+                         regular_node m' /\ 
+                         comp_of_node t m' /\ 
+                         transforming_edge a m m'.
+*)
+(** * Penetrator paths and normal bundles *)
+(* The noation m |--> n means 
++ either m =>+ n with msg_of(m) negative and msg_of(n) positive, or else 
++ m --> n *)
+Inductive path_condition (m n : node) : Prop :=
+  | path_condition_single :  msg_deliver m n -> path_condition m n
+  | path_condition_double : ssuccs m n /\ 
+                            recv(m) /\ 
+                            xmit(n) -> 
+                            path_condition m n.
+
+Hint Constructors path_condition.
+
+(* path_condition implies prec *)
+Lemma path_imp_prec : 
+  forall (m n:node), path_condition m n -> prec m n.
+Proof.
+intros.
+apply path_condition_ind with (m:=m) (n:=n).
+apply deliver_prec.
+intros.
+apply ssuccs_prec. apply H0.
+auto.
+Qed.
+
+(** * Path *)
+
+(** MAYBE WE CAN AVOID THIS?? *)
+Variable default : node. 
+
+(** *** ith node of a path *)
+Definition ith : nat -> list node -> node :=
+  fun (n:nat) (p:list node) => nth n p default.
+
+(** ** Axioms for paths *)
+Definition is_path : list node -> Prop :=
+  fun  (p: list node) => forall (n : nat), 
+    (lt n ((length p)-1)) -> 
+    path_condition (ith n p ) (ith (n+1) p ).
+  
+(* All paths begin on a positive node and end on a negative node *)
+Axiom path_begin_pos_end_neg : forall (p : list node),
+  (is_path p) -> xmit(ith 0 p) /\ recv(ith ((length p)-1)  p).
+
+(** ** Penetrator paths *)
+Definition p_path : list node -> Prop := 
+  fun (p:list node) => 
+is_path p /\ forall (n:nat), lt 0 n /\ lt n (length p - 1) -> 
+                       penetrator_node (ith n p).
+
+(** ** Falling and raising paths *)
+Definition rasing : list node -> Prop := 
+  fun (p:list node) => is_path p /\ forall n, lt n (length p - 1) -> 
+                       ingred (msg_of (ith n p)) (msg_of (ith (n+1) p)).
+
+Definition falling : list node -> Prop := 
+  fun (p:list node) => is_path p /\ forall n, lt n (length p - 1) -> 
+                       ingred (msg_of (ith (n+1) p)) (msg_of (ith n p)).
+
+(* Transformation path *)
+Variable default_pair :prod node msg.
+
+Definition is_trans_path : list (prod node msg)->Prop := 
+  fun (p:list (prod node msg)) => 
+  (forall (n:nat), lt n (length p) -> 
+    comp_of_node (snd (nth n p default_pair)) 
+                 (fst (nth n p default_pair))) /\
+  forall (n:nat), 
+    lt n (length p - 1) ->  
+    path_condition (fst (nth n p default_pair)) 
+                   (fst (nth (n+1) p default_pair)) /\
+  forall (n:nat) (a:msg),
+   (lt n (length p - 1) /\ 
+   snd (nth n p default_pair) <> snd (nth (n+1) p default_pair) /\
+   ingred a (snd (nth n p default_pair)) /\ 
+   ingred a (snd (nth (n+1) p default_pair))) ->
+   transforming_edge a (fst (nth n p default_pair)) 
+                       (fst (nth (n+1) p default_pair)).
+
+(* Baby result : a single pair (n, L) is a trans-foramtion path *)
+Lemma anode_trans_path : 
+  forall (n:node) (t:msg), 
+  comp_of_node t n -> is_trans_path (cons (n,t) nil).
+Proof.
+intros.
+unfold is_trans_path.
+assert (length ((n,t)::nil) = 1).
+auto.
+rewrite H0.
+split.
+intros.
+assert (n0 = 0).
+omega.
+rewrite H2.
+assert (nth 0 ((n,t)::nil) default_pair = (n,t)).
+auto.
+rewrite H3.
+simpl.
+exact H.
+assert (1-1 =0); auto.
+rewrite H1.
+split.
+assert False. omega. elim H3.
+intros.
+destruct H3.
+assert False. omega.
+elim H5.
+Qed.              
+
+Lemma concat_trans_path : 
+  forall p n L a,
+    (is_trans_path p /\
+    comp_of_node L n /\
+    path_condition (fst (nth (length p -1) p default_pair)) n /\
+    (snd (nth (length p -1) p default_pair) <> L /\
+    ingred a (snd (nth (length p -1) p default_pair)) /\
+    ingred a L -> 
+    transforming_edge a (fst(nth (length p -1) p default_pair)) n)) ->
+    is_trans_path (p ++ (cons (n,L) nil)).
+Proof. 
+Admitted.
+
+
+(* Some basic results for lists *)
+Lemma fst_eq : forall (l1 l2:list (prod node msg)), 
+               nth 0 (l1++l2) default_pair = nth 0 l1 default_pair.
+Proof. 
+Admitted.
+
+(* TODO : l1 has to be non-empty *)
+Lemma ignore_lasts : 
+  forall l1 l2, forall (i:nat),
+  lt i (length l1) -> nth i (l1++l2) default_pair = nth i l1 default_pair.
+Proof.
+Admitted.
+
+Lemma last_elem : 
+  forall (l1 : list (prod node msg)) x t, 
+  nth (length (l1++(x,t)::nil) - 1) (l1++(x,t)::nil) default_pair = (x,t).
+Proof.
+Admitted.
+
+
+Lemma ingred_earlier : 
+  forall (n:node) (a:msg), (~ orig_at n a) /\ xmit n /\ ingred a (msg_of n) -> 
+                           exists n', ssuccs n' n /\ ingred a (msg_of n').
+Proof.
+intros.
+(*unfold not in H. unfold orig_at in H.*)
+apply Peirce.
+intros.
+apply False_ind.
+unfold not in H.
+destruct H as (H1, (H2, H3)).
+apply H1. unfold orig_at.
+split. auto. split. auto.
+intros. apply H0.
+exists n'.
+split; auto.
+Qed.
+ 
+Lemma backward_construction : 
+forall (n:node) (a L:msg), comp_of_node L n /\ ~ orig_at n a /\ ingred a L ->
+    exists (n':node) (L':msg), path_condition n' n /\
+                               ingred a L' /\ 
+                               (comp_of_node L' n' /\ 
+                               (L' <> L /\
+                               ingred a L' /\ ingred a L ->
+                               transforming_edge a n' n)).
+Proof.
+intros.
+assert (xmit n \/ recv n).
+apply xmit_or_recv.
+case H0.
+Focus 2.
+intros.
+assert (exists (n':node), msg_deliver n' n). 
+apply was_sent. auto.
+destruct H2 as (n', H2).
+exists n'.
+exists L.
+split. constructor. auto.
+split. apply H.
+split. apply msg_deliver_comp with (n1:=n') (n2:=n).
+split. auto. apply H.  
+intros. assert (L <> L). apply H3.
+assert False. apply H4. auto. elim H5.
+intros.
+assert (new_at L n \/ ~(new_at L n)). tauto.
+case H2.
+intros. assert (exists n', ssuccs n' n /\ ingred a (msg_of n')).
+apply ingred_earlier. repeat split; auto. apply H.
+Admitted.
+
+Definition P11 : node -> Prop := 
+  fun (n':node) => 
+  forall (a t:msg), 
+  ingred a t /\ comp_of_node t n' -> 
+  exists p, is_trans_path p /\ 
+  orig_at (fst (nth 0 p default_pair)) a /\
+  fst (nth (length p - 1) p default_pair) = n' /\ 
+  snd (nth (length p -1) p default_pair) = t /\
+  forall (i:nat), lt i (length p) -> ingred a (snd (nth i p default_pair)).
+              
+(*Proposition 11 *)
+Lemma proposition11 : 
+  forall (n':node), P11 n'.
+Proof.
+apply induct_ok.
+intros.
+unfold P11.
+unfold P11 in H.
+intros.
+destruct H0 as (H1, H2).
+assert (orig_at x a \/ ~ orig_at x a).
+tauto.
+case H0.
+intros.
+exists (cons (x, t) nil).
+simpl.
+split.
+apply anode_trans_path with (n:=x) (t:=t).
+exact H2.
+split; auto; split; auto; split; auto.
+intros.
+assert (i=0). omega.
+rewrite H5;auto.
+intros.
+assert (exists (n':node) (L':msg), 
+          path_condition n' x /\
+          ingred a L' /\
+          (comp_of_node L' n' /\ 
+          (L' <> t /\
+          ingred a L' /\ ingred a t ->
+          transforming_edge a n' x))).
+apply backward_construction. auto.
+destruct H4 as (n', (L', (H4, (H5, (H6, H7))))).
+assert (forall a t : msg,
+        ingred a t /\ comp_of_node t n' ->
+        exists p : list (node * msg),
+        is_trans_path p /\
+        orig_at (fst (nth 0 p default_pair)) a /\
+        fst (nth (length p - 1) p default_pair) = n' /\
+        snd (nth (length p - 1) p default_pair) = t /\
+        (forall i : nat, i < length p -> ingred a (snd (nth i p default_pair)))).
+apply H with (y:=n').
+apply path_imp_prec.
+exact H4.
+assert (exists p : list (node * msg),
+       is_trans_path p /\
+       orig_at (fst (nth 0 p default_pair)) a /\
+       fst (nth (length p - 1) p default_pair) = n' /\
+       snd (nth (length p - 1) p default_pair) = L' /\
+       (forall i : nat, i < length p -> ingred a (snd (nth i p default_pair)))).
+apply H8. auto. 
+destruct H9 as (p0,IH).
+destruct IH as (IH1, (IH2, (IH3, (IH4, IH5)))).
+exists (p0 ++ (cons (x,t) nil)).
+split.
+apply concat_trans_path with (a:=a).
+
+split. exact IH1. split. auto. rewrite IH3. rewrite IH4.
+split. auto. auto.
+split. 
+assert ((nth 0 (p0 ++ (x, t) :: nil) default_pair)=
+        (nth 0 p0 default_pair)).
+apply fst_eq.
+rewrite H9. auto.
+assert (nth (length (p0 ++ (x, t) :: nil) - 1) 
+       (p0 ++ (x, t) :: nil) default_pair = (x,t)).
+apply last_elem.
+rewrite H9.
+split. auto. split. auto.
+intros.
+assert (length (p0 ++ (x, t) :: nil) = length p0 + 1).
+apply app_length.
+rewrite H11 in H10.
+assert (i < length p0 \/ i = length (p0 ++ (x, t) :: nil) -1).
+omega.
+case H12.
+intros.
+assert (nth i (p0 ++ (x, t) :: nil) default_pair = nth i p0 default_pair).
+apply ignore_lasts. auto.
+rewrite H14. apply IH5. auto.
+intros.
+rewrite H13.
+rewrite last_elem. simpl. auto.
+Qed.
 
