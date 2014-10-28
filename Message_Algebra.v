@@ -90,6 +90,9 @@ Inductive key :=
 | Pubk : name -> key
 | Privk : name -> key .
 
+
+Print key_ind.
+
 Definition invk : key -> key  :=
   fun (k:key) =>
     match k with 
