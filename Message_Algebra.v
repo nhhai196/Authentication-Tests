@@ -108,6 +108,7 @@ Inductive msg :=
 | K : key -> msg
 | P : msg -> msg -> msg
 | E :  msg -> key -> msg.
+Hint Constructors msg.
 
 (** Treat basic as a predicate, not a subtype *)
 
@@ -115,7 +116,7 @@ Inductive is_basic : msg -> Prop :=
 | bvar : forall x,  is_basic (V x)
 | bdata : forall x, is_basic (D x)
 | bkey : forall x, is_basic (K x)  .
-
+Hint Constructors is_basic.
 
 (**  * Three notions of subterm *)
 
@@ -126,17 +127,19 @@ Inductive ingred_1 :  msg -> msg -> Prop :=
 | inpair1 : forall x y, ingred_1  x (P x y)
 | inpair2 : forall x y, ingred_1  y (P x y)
 | inenc1  : forall x k, ingred_1 x (E x k)  .
+Hint Constructors ingred_1.
 
 (** *** Transitive closure *)
 Inductive ingred_p (x: msg) : msg -> Prop :=
 | ingred_p_step y  : ingred_1 x y -> ingred_p x y
-| ingred_p_trans y y' : ingred_1 x y' -> ingred_p x y' -> ingred_p x y.
-
+| ingred_p_trans y y' : ingred_p x y' -> ingred_p y' y -> ingred_p x y.
+Hint Constructors ingred_p.
 
 (** ***  Reflexive-Transitive closure *)
 Inductive ingred (x: msg) : msg -> Prop :=
 | ingred_refl : ingred x x
 | ingred_step y  : ingred_p x y -> ingred x y.
+Hint Constructors ingred.
 
 
 (** ** "Strong ingredient", written as [<<] in EPPSG *)
@@ -153,7 +156,7 @@ Inductive strong_ingred_1 :  msg -> msg -> Prop :=
 (** ** Transitive  closures *)
 Inductive strong_ingred_p (x: msg) : msg -> Prop :=
 | strong_ingred_p_step y : strong_ingred_1 x y -> strong_ingred_p x y
-| strong_ingred_p_trans (y y':msg) : strong_ingred_1 x y' -> strong_ingred_p x y' -> strong_ingred_p x y.
+| strong_ingred_p_trans (y y':msg) : strong_ingred_1 x y' -> strong_ingred_p y' y -> strong_ingred_p x y.
 
 
 (** ***  Reflexive-Transitive closure *)
@@ -177,7 +180,7 @@ Inductive occurs_in_1 :  msg -> msg -> Prop :=
 (** ***  Transitive closure *)
 Inductive occurs_in_p (x: msg) : msg -> Prop :=
 | occurs_in_p_step y : occurs_in_1 x y -> occurs_in_p x y
-| occurs_in_p_trans y y' : occurs_in_1 x y' -> occurs_in_p x y' -> occurs_in_p x y.
+| occurs_in_p_trans y y' : occurs_in_1 x y' -> occurs_in_p y' y -> occurs_in_p x y.
 
 (** ***  Reflexive-Transitive closure *)
 Inductive occurs_in (x: msg) : msg -> Prop :=

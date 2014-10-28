@@ -603,6 +603,17 @@ apply comp_imp_ingred.
 assumption.
 Qed.
 
+Lemma ingred_trans : 
+  forall (x y z:msg), ingred x y -> ingred y z -> ingred x z.
+Proof.
+intros.
+induction H. auto with arith.
+case H0.
+apply ingred_step; assumption.
+intros. apply ingred_step.
+apply ingred_p_trans with (y':=y); assumption.
+Qed.
+
 Lemma msg_deliver_comp : 
   forall (n1 n2:node) (m:msg), msg_deliver n1 n2 /\ comp_of_node m n2 -> comp_of_node m n1.
 Proof.
@@ -621,7 +632,7 @@ t is not a component of any node <s,j> for every j < i *)
 Definition new_at : msg -> node -> Prop :=
   fun (m : msg) (n : node) => 
   comp_of_node m n /\ 
-  (forall (n' : node) , ssuccseq n n' /\ ~(comp_of_node m n')).
+  (forall (n' : node) , ssuccs n' n /\ ~(comp_of_node m n')).
 
 
 (** Transfroming edge *) 
@@ -629,7 +640,7 @@ Definition new_at : msg -> node -> Prop :=
 then transforming edge : msg -> edge -> Prop *)
 Definition transforming_edge : msg -> node -> node -> Prop :=
   fun (m: msg) (n1 n2 : node) =>  
-  ssuccseq n1 n2 /\ 
+  ssuccs n1 n2 /\ 
   recv (n1) /\ 
   xmit(n2) /\
   (ingred m (msg_of n1)) /\
@@ -637,7 +648,7 @@ Definition transforming_edge : msg -> node -> node -> Prop :=
 (* Similarly for transformed edge *)
 Definition transformed_edge : msg -> node -> node -> Prop :=
   fun (m: msg) (n1 n2 : node) => 
-  ssuccseq n1 n2 /\ 
+  ssuccs n1 n2 /\ 
   xmit (n1) /\ 
   recv(n2) /\
   ingred m (msg_of n1) /\
@@ -829,7 +840,7 @@ Admitted.
 
 Lemma ingred_earlier : 
   forall (n:node) (a:msg), (~ orig_at n a) /\ xmit n /\ ingred a (msg_of n) -> 
-                           exists n', ssuccs n' n /\ ingred a (msg_of n').
+                           exists n',  ssuccs n' n /\ ingred a (msg_of n').
 Proof.
 intros.
 (*unfold not in H. unfold orig_at in H.*)
@@ -840,10 +851,17 @@ unfold not in H.
 destruct H as (H1, (H2, H3)).
 apply H1. unfold orig_at.
 split. auto. split. auto.
+
 intros. apply H0.
 exists n'.
 split; auto.
 Qed.
+
+
+Lemma ingred_exists_comp: 
+  forall (n:node) (a:msg), ingred a (msg_of n) -> exists L, ingred a L /\ comp_of_node L n.
+Proof.
+Admitted.
  
 Lemma backward_construction : 
 forall (n:node) (a L:msg), comp_of_node L n /\ ~ orig_at n a /\ ingred a L ->
@@ -876,6 +894,14 @@ assert (new_at L n \/ ~(new_at L n)). tauto.
 case H2.
 intros. assert (exists n', ssuccs n' n /\ ingred a (msg_of n')).
 apply ingred_earlier. repeat split; auto. apply H.
+apply ingred_trans with (y:=L). 
+apply H. apply comp_of_node_imp_ingred. apply H.
+destruct H4 as (n', (H4, H5)).
+assert (exists L', ingred a L' /\ comp_of_node L' n').
+apply ingred_exists_comp; assumption.
+destruct H6 as (L', (H6, H7)).
+exists n'.
+exists L'.
 Admitted.
 
 Definition P11 : node -> Prop := 
