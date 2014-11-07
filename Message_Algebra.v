@@ -8,7 +8,7 @@
 (* Require Import strictorder set_rep_equiv util. *)
 (* Require Import String. *)
 
-Require Import Relation_Definitions Relation_Operators.
+Require Import Relation_Definitions Relation_Operators Omega Arith.
 
 (* ******************************************************* *)
 (* VERSION 3 *)
@@ -121,13 +121,15 @@ Definition eq_msg_dec : forall x y : msg,
   {x = y} + {x <> y}.
 Proof.
 intros.
-decide equality. Qed.
+decide equality.
+Qed.
 
 Hint Resolve eq_msg_dec.
 
 (** Atomic values *)
 Inductive is_atomic : msg -> Prop := 
-  |atom : forall x, is_atomic (D x).
+  |a_data : forall x, is_atomic (D x)
+  |a_key : forall k, is_atomic (K k).
 Hint Constructors is_atomic.
 
 (** Concatenated terms or messages *)
@@ -154,8 +156,8 @@ Proof.
 intros.
 unfold not.
 intros. inversion H. inversion H0.
-symmetry in H1. rewrite H1 in H2.
-discriminate.
+symmetry in H1. rewrite H1 in H2. discriminate.
+symmetry in H1. rewrite H1 in H2. discriminate.
 Qed.
 
 Lemma atomic_not_concat:
@@ -163,7 +165,9 @@ Lemma atomic_not_concat:
 Proof.
 intros.
 unfold not. intros.
-inversion H. inversion H0. 
+inversion H0. inversion H. 
+symmetry in H1. rewrite H1 in H2.
+discriminate.
 symmetry in H1. rewrite H1 in H2.
 discriminate.
 Qed.
@@ -186,8 +190,8 @@ Inductive ingred_1 :  msg -> msg -> Prop :=
 Hint Constructors ingred_1.
 
 (** *** Transitive closure *)
-Inductive ingred_p (x: msg) : msg -> Prop :=
-| ingred_p_step y  : ingred_1 x y -> ingred_p x y
+Inductive ingred_p (x:msg) : msg -> Prop :=
+| ingred_p_step y : ingred_1 x y -> ingred_p x y
 | ingred_p_trans y y' : ingred_1 x y' -> ingred_p y' y -> ingred_p x y.
 Hint Constructors ingred_p.
 
@@ -196,6 +200,7 @@ Inductive ingred (x: msg) : msg -> Prop :=
 | ingred_refl : ingred x x
 | ingred_step y  : ingred_p x y -> ingred x y.
 Hint Constructors ingred.
+Print ingred_ind.
 
 Lemma ingred_p_transitive : 
   forall (x y z:msg), ingred_p x y -> ingred_p y z -> ingred_p x z.
@@ -211,7 +216,7 @@ Lemma ingred_trans :
   forall (x y z:msg), ingred x y -> ingred y z -> ingred x z.
 Proof.
 intros.
-induction H; auto.
+induction H. auto.
 inversion H0. subst. 
 apply ingred_step; assumption.
 apply ingred_step.
@@ -223,6 +228,68 @@ Proof.
 Admitted.
 Hint Resolve ingred_dec.
 Print ingred_ind.
+
+(** *** Some basic results about ingred *)
+Lemma ingred_1_pair : forall x y z, ingred_1 x (P y z) -> 
+                    ingred x y \/ ingred x z.
+Proof.
+intros.
+inversion H.
+left. apply ingred_refl.
+right. apply ingred_refl.
+Qed.
+
+(* Induction on ingred_p x P(P y z) doesn't keep the information 
+ about (P y z), so we have to use "REMEMBER" here *)
+Lemma ingred_p_pair : forall y z x, ingred_p x (P y z) -> 
+                    ingred x y \/ ingred x z.
+Proof.
+intros.
+remember (P y z) as e in H.
+induction H.
+apply ingred_1_pair. rewrite Heqe in H. assumption.
+assert (ingred y' y \/ ingred y' z). apply IHingred_p. auto.
+assert (ingred x y'). apply ingred_step. apply ingred_p_step. assumption.
+case H1.
+intros. left. apply ingred_trans with (y:=y'); assumption.
+intros. right. apply ingred_trans with (y:=y'); assumption.
+Qed.
+
+Lemma ingred_pair : forall x y z, ingred x (P y z) /\ x <> (P y z) -> 
+                    ingred x y \/ ingred x z.
+Proof.
+intros.
+destruct H as (H1, H2).
+inversion H1. elim H2. auto.
+apply ingred_p_pair. assumption.
+Qed.
+
+(** Similarly for encryption *)
+Lemma ingred_1_enc : forall x y k, ingred_1 x (E y k) -> ingred x y.
+Proof.
+intros.
+inversion H. auto.
+Qed.
+
+Lemma ingred_p_enc : forall x y k, ingred_p x (E y k) -> ingred x y.
+Proof.
+intros.
+remember (E y k) as e in H.
+induction H.
+apply ingred_1_enc with (k:=k).  rewrite Heqe in H. assumption.
+assert (ingred y' y). apply IHingred_p. assumption.
+assert (ingred x y'). apply ingred_step. apply ingred_p_step. assumption.
+apply ingred_trans with (y:=y'); assumption.
+Qed.
+
+Lemma ingred_enc : forall x y k, ingred x (E y k) /\ x <> (E y k) -> ingred x y. 
+Proof. 
+intros.
+destruct H.
+inversion H.
+elim H0; auto.
+apply ingred_p_enc with (k:=k). assumption.
+Qed.
 
 (** ** "Strong ingredient", written as [<<] in EPPSG *)
 (** *** Basis *)
@@ -300,5 +367,92 @@ induction H1. exists e. apply max_enc1.
 repeat split. apply ingred_refl. auto. 
 intros. apply H.
 *)
+(* ** Size of messages *) 
+(* A tool for reasoning about ingredients *)
 
+Fixpoint size (m:msg) :=
+  match m with 
+   | D x => 1
+   | K k => 1 
+   | P m1 m2 => (size m1) + (size m2)
+   | E x k => (size x) + 1
+   end.
 
+Check size.
+
+(* Size of every message is always positive *)
+Lemma zero_lt_size : forall x, 0 < size x.
+Proof.
+intro x.
+induction x.
+auto. auto.
+simpl; omega. 
+simpl; omega.
+Qed.
+
+Lemma size_lt_plus_l : forall x y, size x < size x + size y.
+Proof.
+intros x y. 
+assert (size x + 0 < size x  + size y).
+apply plus_lt_compat_l. apply zero_lt_size.
+rewrite (plus_comm (size x) 0) in H.
+rewrite (plus_O_n (size x)) in H. auto. 
+Qed.
+
+(* ** Relation between ingredient and size *)
+(* Given a message, then size of an ingredient is always
+less than or equal size of message itself *)
+
+Lemma ingred_1_lt :
+  forall x y, ingred_1 x y -> size(x) < size(y).
+Proof.
+intros x y H.
+inversion H.
+simpl. apply size_lt_plus_l.
+simpl. rewrite plus_comm.
+apply size_lt_plus_l.
+simpl; omega.
+Qed.
+
+Lemma ingred_p_lt : 
+  forall x y, ingred_p x y -> size(x) < size(y).
+Proof.
+intros x y H.
+induction H.
+apply ingred_1_lt; assumption.
+assert (size x < size y'). apply ingred_1_lt; assumption.
+apply lt_trans with (m:=size y'); assumption.
+Qed.
+
+Lemma ingred_lt : 
+  forall x y, ingred x y -> size(x) <= size(y).
+Proof. 
+intros x y H.
+inversion H.
+auto.
+assert (size x < size y).
+apply ingred_p_lt; assumption.
+omega.
+Qed.
+ 
+(* *) 
+Lemma ingred_same_size_eq : 
+  forall x y, ingred x y /\ size(x) >= size(y) -> x=y.
+Proof.
+intros x y H.
+destruct H as (H0, H1).
+inversion H0; auto.
+assert (size x < size y). apply ingred_p_lt; assumption.
+assert False. omega. elim H4.
+Qed.
+
+(* If each message ia an ingredient of the other, 
+then they are the same *)
+Lemma ingred_eq : forall x y, ingred x y -> ingred y x -> x=y.
+Proof.
+intros.
+assert (size x <= size y). apply ingred_lt; assumption.
+assert (size y <= size x). apply ingred_lt; assumption.
+assert (size x = size y). omega. 
+apply ingred_same_size_eq. split; assumption.
+Qed.

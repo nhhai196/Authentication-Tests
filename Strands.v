@@ -1107,10 +1107,6 @@ assert (~ ingred_p y x).
 apply ingred_p_neq. auto. elim H5; auto.
 Qed.
 
-Lemma ingred_reflex : forall m, ingred m m.
-Proof.
-Admitted.
-
 Lemma comp_1 : forall a b, is_atomic a -> comp a (P a b).
 Admitted.
 
@@ -1147,33 +1143,89 @@ apply IHingred_p; auto. destruct H5 as (L, H5). exists L.
 split. apply ingred_trans with (y:=y').
 apply ingred_step. apply ingred_p_step. auto. 
 apply H5. apply H5.
+Admitted.
 
-Lemma ingred_exists_comp2: 
-  forall a m,is_atomic a /\ ingred a m -> exists L, ingred a L /\ comp L m.
+Lemma atomic_ingred_eq' : 
+  forall a d, ingred a (D d) -> a = D d.
+Proof. 
+intros.
+inversion H. auto.
+assert (size (D d) = 1). auto.
+assert (size a > 0). apply zero_lt_size.
+assert (size a >= size (D d)). rewrite H2. omega.
+apply ingred_same_size_eq. split; assumption.
+Qed. 
+
+Lemma atomic_ingred_eq : 
+   forall x a, is_atomic a /\ ingred x a -> x=a.
 Proof.
 intros.
 destruct H.
-inversion H0. symmetry in H1. rewrite H1. exists a. 
-unfold comp. repeat split.
-apply ingred_refl. apply ingred_refl.
-apply atomic_not_concat. assumption.
-intros.
-assert (a=m1). apply ingred_eq; apply H2.
-destruct H2. assert False. rewrite H3 in H2; auto.
-apply False_ind. assumption.
-intros. inversion H1. inversion H3.
-exists a. split. apply ingred_reflex. unfold comp. 
-split. rewrite H6. auto. split. apply atomic_not_concat. auto.
-intros. assert (m1 = P a y1).  destruct H7 as (H7, (H8, H9)).
-inversion H8. inversion H9. apply False_ind. rewrite H10 in H11. 
-intros. case y0.
+inversion H.
+inversion H0. auto.
+assert (size (D x0) = 1). auto.
+assert (size x > 0). apply zero_lt_size.
+assert (size x >= size (D x0)). omega.
+apply ingred_same_size_eq. split. rewrite H1. assumption. assumption.
+assert (size (K k) = 1). auto.
+assert (size x > 0). apply zero_lt_size.
+assert (size x >= size (K k)). omega.
+apply ingred_same_size_eq. split. rewrite H1. assumption. assumption.
+Qed.
+
+Lemma comp_cyclic : forall a, is_atomic a -> comp a a.
+Proof.
+Admitted.
+
+Lemma comp_enc_cyclic : forall x k, comp (E x k) (E x k).
+Admitted.
+
+Lemma preserve_comp_l : forall x m1 m2, comp x m1 -> comp x (P m1 m2).
+Proof. 
+Admitted.
+
+Lemma preserve_comp_r : forall x m1 m2, comp x m2 -> comp x (P m1 m2).
 Admitted.
 
 Lemma ingred_exists_comp: 
-  forall (n:node) (a:msg),
-    ingred a (msg_of n) -> exists L, ingred a L /\ comp_of_node L n.
+  forall m a, is_atomic a /\ ingred a m -> exists L, ingred a L /\ comp L m.
 Proof.
-Admitted.
+intros.
+destruct H.
+induction m.
+assert (a = D d). apply atomic_ingred_eq. 
+split. auto. assumption.
+exists a. split. apply ingred_refl. 
+rewrite H1. apply comp_cyclic; auto.
+assert (a = K k). apply atomic_ingred_eq. 
+split. auto. assumption.
+exists a. split. apply ingred_refl. 
+rewrite H1. apply comp_cyclic; auto.
+assert (ingred a m1 \/ ingred a m2).
+apply ingred_pair. split. assumption.
+inversion H; discriminate.
+case H1.
+intro. 
+assert (exists L : msg, ingred a L /\ comp L m1).
+apply IHm1. assumption.
+destruct H3 as (L, (H3, H4)).
+exists L. split. assumption. apply preserve_comp_l; assumption.
+intro.
+assert (exists L : msg, ingred a L /\ comp L m2).
+apply IHm2. assumption.
+destruct H3 as (L, (H3, H4)).
+exists L. split. assumption. apply preserve_comp_r; assumption.
+exists (E m k). split. assumption. apply comp_enc_cyclic.
+Qed.
+
+Lemma ingred_exists_comp_of_node: 
+  forall (n:node) (a:msg),
+    is_atomic a /\ ingred a (msg_of n) -> exists L, ingred a L /\ comp_of_node L n.
+Proof.
+intros.
+apply ingred_exists_comp.
+auto.
+Qed.
 
 Lemma not_new_exists : 
   forall n L, ~ new_at L n ->
@@ -1215,7 +1267,7 @@ apply ingred_trans with (y:=L).
 apply H. apply comp_of_node_imp_ingred. apply H.
 destruct H4 as (n', (H4, H5)).
 assert (exists L', ingred a L' /\ comp_of_node L' n').
-apply ingred_exists_comp; assumption.
+apply ingred_exists_comp_of_node. assumption.
 destruct H6 as (L', (H6, H7)).
 exists n'.
 exists L'.
