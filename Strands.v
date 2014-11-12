@@ -511,111 +511,13 @@ Qed.
 
 End IngredientsOriginate.
 
-
-
-(** * Working: extracting a minimal elelment *)
-
-
-(* Section ExtractingMins. *)
-
-(* Require Import IndefiniteDescription. *)
-
-(* Variable P : node -> Prop. *)
-
-(* Variable assm: exists (x:node) ( P:node->Prop),  P x. *)
-
-(* (* Check assm. *) *)
-
-(* (* Check functional_choice. *) *)
-
-(* (* Check constructive_indefinite_description. *) *)
-
-(* Definition prec_description :=  *)
-(*  fun (P: node -> Prop) =>  *)
-(*  constructive_indefinite_description  P. *)
-
-(* (* Check prec_description. *) *)
-
-
-(* Definition get_min (P : node -> Prop) := *)
-(*    constructive_indefinite_description  P. *)
-
-
-(* End ExtractingMins. *)
-
-
-(* 
-Notation " x [= y " := (ingred x y) (at level 50).
-(** printing [= $\sqsubseteq$ *) 
-
-Notation "x ~> y" := (msg_deliver x y) (at level 50).
-(** printing ~> $\leadsto$ *) 
-
-Notation " x ==> y " := (ssucc x y) (at level 50).
-(** printing ==> $\Rightarrow$ *) 
-
-Notation " x << y " := (prec x y) (at level 50).
-(** printing << $\prec$ *) 
-
-Notation " x ==>> y " := (ssuccseq x y) (at level 50).
-(** printing ==>> $\Rightarrow^*$ *) 
-
-Notation " x <<= y " := (preceq x y) (at level 50).
-(** printing <<= $\preceq$ *) 
-
-*)
-
-(** * Induction *) 
-Theorem induct_ok : 
-  forall (P:node -> Prop), 
-    (forall (x:node), (forall (y:node), prec y x -> P y) -> P x) -> 
-                      forall (x:node), P x.
-Proof.
-(* Check well_founded_ind. *)
-apply well_founded_ind.
-exact wf_prec.
-Qed.
-
-(** ***Penetrable keys and safe keys *)
-
-(** Notion of component *)
-
-Definition comp : msg -> msg -> Prop :=
-  fun (m0 : msg ) (m :msg) => 
-    ingred m0 m /\ 
-    ~(concat m0)  /\
-    (forall (m1 : msg), (m0 <> m1) /\ 
-   (ingred  m0 m1) /\ (ingred m1 m) -> (concat m1)).
-
-(* Basic result about component *)
-(* QUESTION : is key atomic?*)
-Lemma comp_atom_or_enc : 
-  forall m1, (exists m2, comp m1 m2) -> is_atomic m1 \/ is_enc m1.
-Proof.
-Admitted.
-
-
-(* *** Component of a node : say t is a component 
-of a node n if t is a component of msg_of (n) *)
+(** * New Component *)
+(** ** Component of a node *)
+(** A message is a component of a node if it is a component 
+of the message at that node *)
 Definition comp_of_node : msg -> node -> Prop :=
-  fun (m : msg) (n : node) => comp m (msg_of n).
-
-(* Basic results *)
-Lemma comp_imp_ingred : forall (m1 m2:msg), comp m1 m2 -> ingred m1 m2.
-Proof.
-intros.
-unfold comp in H.
-apply H.
-Qed.
-
-Lemma comp_of_node_imp_ingred : 
-  forall (m:msg) (n:node), comp_of_node m n -> ingred m (msg_of n).
-Proof.
-intros.
-unfold comp_of_node in H.
-apply comp_imp_ingred.
-assumption.
-Qed.
+  fun (m:msg) (n:node) => comp m (msg_of n). 
+Notation "x <[node] y" := (comp_of_node x y) (at level 50) : ss_scope.
 
 Lemma msg_deliver_comp : 
   forall (n1 n2:node) (m:msg),
@@ -630,264 +532,188 @@ apply msg_deliver_ax. auto.
 rewrite H.
 unfold comp_of_node in H2. auto.
 Qed.
+Hint Resolve msg_deliver_comp.
 
-(* *** New at : A message msg is new at a node n = <s,i> 
-if t is a component of msg_of(n) and
-t is not a component of any node <s,j> for every j < i *)
-Definition new_at : msg -> node -> Prop :=
-  fun (m : msg) (n : node) => 
-  comp_of_node m n /\ 
-  forall (n' : node) , ssuccs n' n -> (comp_of_node m n')-> False.
-
-Lemma new_at_imp_comp : forall m n, new_at m n -> comp_of_node m n.
+Lemma comp_of_node_imp_ingred : 
+  forall (m:msg) (n:node), m <[node] n -> m <st (msg_of n).
 Proof.
 intros.
+unfold comp_of_node in H.
+apply comp_imp_ingred.
+assumption.
+Qed.
+
+(** ** New at *)
+(** A message is new at a node if it is a component of that node
+and the message is not a component of any ealier node in the same 
+strand with the node *)
+Definition new_at : msg -> node -> Prop :=
+  fun (m : msg) (n : node) => 
+  m <[node] n /\ 
+  forall (n' : node) , ssuccs n' n -> m <[node] n'-> False.
+
+Lemma new_at_imp_comp : forall m n, new_at m n -> m <[node] n.
+Proof.
+intros m n H.
 unfold new_at in H.
 apply H.
 Qed.
 
-Variable LL : msg.
-Definition m_comp (n:node):Prop := comp_of_node LL n.
-
-(* Every component has to be new at some where *)
-Theorem comp_new_at :
-  forall (n:node), comp_of_node LL n ->
-                           exists (n:node), new_at LL n.
+Lemma not_new_exists : 
+  forall n L, L <[node] n -> ~ new_at L n ->
+  exists n', ssuccs n' n /\ L <[node] n'.
 Proof.
-intros.
-assert (a1: has_min_elt m_comp).
-apply always_min_elt.
-exists n; unfold m_comp; auto.
-unfold new_at.
-unfold has_min_elt in a1.
-destruct a1.
-unfold m_comp in H0.
-unfold is_minimal in H0.
-destruct H0.
-exists x.
-split.
-auto.
-intros.
-unfold not in H1.
-apply H1 with (y:=n').
-apply ssuccs_prec; auto.
-assumption.
+unfold not.
+intros n L Hcom Hnnew.
+apply Peirce. intros.
+apply False_ind. apply Hnnew.
+unfold new_at. split.
+  assumption.
+  intros n' Hssucc Hcomn'.
+    apply H. exists n'.
+      split; auto.
 Qed.
 
-(** Transfroming edge *) 
-(* Should we define edge first, 
-then transforming edge : msg -> edge -> Prop *)
-Definition transforming_edge : msg -> node -> node -> Prop :=
-  fun (m: msg) (n1 n2 : node) =>  
-  ssuccs n1 n2 /\ 
-  recv (n1) /\ 
-  xmit(n2) /\
-  (ingred m (msg_of n1)) /\
-  (exists t2, new_at t2 n2 /\ ingred m t2).
-(* Similarly for transformed edge *)
-Definition transformed_edge : msg -> node -> node -> Prop :=
-  fun (m: msg) (n1 n2 : node) => 
-  ssuccs n1 n2 /\ 
-  xmit (n1) /\ 
-  recv(n2) /\
-  ingred m (msg_of n1) /\
-  exists t2, new_at t2 n2 /\ ingred m t2.
-Check (list node).
-
-(** Regular node *)
-Definition regular_node : node -> Prop :=
-  fun (n : node) => exists s, set_In s regular_strand /\ s = strand_of n.
-
-(** Penetrator node *)
-Definition penetrator_node : node -> Prop :=
-  fun (n:node) => exists s, set_In s penetrable_strand /\ s = strand_of n.
-                                  
-(** Test component *)
-(* Here we need the notions of regular nodes *)
-Definition test_component : msg -> msg -> node -> Prop :=
-  fun (a t : msg) (n : node) => 
-  exists h k, t = (E h k) /\
-  ingred a t /\ 
-  comp_of_node t n /\
-  forall (n' : node), regular_node n' /\
-  (forall c, comp_of_node c n' -> ~(ingred t c /\ t <> c)).
-
-Variable PK : set key.
-Definition test_for : msg -> node -> node -> Prop :=
-  fun (a : msg) (n0 n1 : node) => orig_at n0 a /\ 
-                                  unique a /\
-                                  transformed_edge a n0 n1. 
- 
-(** Incoming test *)
-Definition  incoming_test : msg -> msg -> node -> node -> Prop := 
-  fun (a t : msg) (n0 n1 : node) => exists h K, t = (E h K) /\
-                                    set_In K PK /\ 
-                                    test_for a n0 n1 /\
-                                    test_component a t n1. 
-
-(** Anthentication test *)
-(* Lemma Authentication_test_2 : 
-  forall (n n' : node) (a t : msg),
-   ssuccseq n n' /\ incoming_test a t n n' -> 
-   exists (m m' : node), regular_node m /\
-                         regular_node m' /\ 
-                         comp_of_node t m' /\ 
-                         transforming_edge a m m'.
-*)
-(** * Penetrator paths and normal bundles *)
-(* The noation m |--> n means 
-+ either m =>+ n with msg_of(m) negative and msg_of(n) positive, or else 
-+ m --> n *)
-Inductive path_condition (m n : node) : Prop :=
-  | path_condition_single :  msg_deliver m n -> path_condition m n
-  | path_condition_double : ssuccs m n /\ 
+(** * Path *)
+(** ** Path condition *)
+Inductive path_cond (m n : node) : Prop :=
+  | path_cond_single :  msg_deliver m n -> path_cond m n
+  | path_cond_double : ssuccs m n /\ 
                             recv(m) /\ 
                             xmit(n) -> 
-                            path_condition m n.
+                            path_cond m n.
+Hint Constructors path_cond.
+Notation "m |--> n" := (path_cond m n) (at level 30) : ss_scope.
 
-Hint Constructors path_condition.
-
-(* path_condition implies prec *)
+(** ** Path condition implies prec *)
 Lemma path_imp_prec : 
-  forall (m n:node), path_condition m n -> prec m n.
+  forall (m n:node), m |--> n -> prec m n.
 Proof.
 intros.
-apply path_condition_ind with (m:=m) (n:=n).
+apply path_cond_ind with (m:=m) (n:=n).
 apply deliver_prec.
 intros.
 apply ssuccs_prec. apply H0.
 auto.
 Qed.
 
-(** * Path *)
-
 (** MAYBE WE CAN AVOID THIS?? *)
-Variable default : node. 
+Variable default_n : node. 
 
-(** *** ith node of a path *)
-Definition ith : nat -> list node -> node :=
-  fun (n:nat) (p:list node) => nth n p default.
+(** ** ith node of a path *)
+Definition nth_node : nat -> list node -> node :=
+  fun (n:nat) (p:list node) => nth n p default_n.
+Hint Resolve nth_node.
 
 (** ** Axioms for paths *)
 Definition is_path : list node -> Prop :=
   fun  (p: list node) => forall (n : nat), 
-    (lt n ((length p)-1)) -> 
-    path_condition (ith n p ) (ith (n+1) p ).
-  
-(* All paths begin on a positive node and end on a negative node *)
+    n < length(p) - 1 -> 
+    path_cond (nth_node n p ) (nth_node (n+1) p ).
+
+(** ** Axiom for paths *)
+(** All paths begin on a positive node and end on a negative node *)
 Axiom path_begin_pos_end_neg : forall (p : list node),
-  (is_path p) -> xmit(ith 0 p) /\ recv(ith ((length p)-1)  p).
+  is_path p -> xmit(nth_node 0 p) /\ recv(nth_node (length p - 1)  p).
 
-(** ** Penetrator paths *)
-Definition p_path : list node -> Prop := 
-  fun (p:list node) => 
-is_path p /\ forall (n:nat), lt 0 n /\ lt n (length p - 1) -> 
-                       penetrator_node (ith n p).
-
-(** ** Falling and raising paths *)
-Definition rasing : list node -> Prop := 
-  fun (p:list node) => is_path p /\ forall n, lt n (length p - 1) -> 
-                       ingred (msg_of (ith n p)) (msg_of (ith (n+1) p)).
-
-Definition falling : list node -> Prop := 
-  fun (p:list node) => is_path p /\ forall n, lt n (length p - 1) -> 
-                       ingred (msg_of (ith (n+1) p)) (msg_of (ith n p)).
-
-(* Transformation path *)
-Variable default_pair :prod node msg.
-
-(*Definition is_trans_path : list (prod node msg)->Prop := 
-  fun (p:list (prod node msg)) => 
-  forall (n:nat), lt n (length p) -> 
-    comp_of_node (snd (nth n p default_pair)) 
-                 (fst (nth n p default_pair)) /\
-  forall (n:nat),
-   (lt n (length p - 1) ->
-   snd (nth n p default_pair) = snd (nth (n+1) p default_pair) \/
-   (snd (nth n p default_pair) <> snd (nth (n+1) p default_pair)) ->
-   (ssuccs (fst (nth n p default_pair)) (fst (nth (n+1) p default_pair))) /\
-   new_at (snd (nth (n+1) p default_pair)) (fst (nth (n+1) p default_pair))).
-*)
+(** * Transformation path *)
+Variable default_msg : msg.
+Definition nth_msg : nat -> list msg -> msg :=
+  fun (n:nat) (p:list msg) => nth n p default_msg.
+Hint Resolve nth_msg.
 
 Definition is_trans_path : list (prod node msg)->Prop := 
   fun (p:list (prod node msg)) => 
-    forall (n:nat), 
-    let n1:= fst (nth n p default_pair) in
-    let L1:= snd (nth n p default_pair) in
-      let n2:= fst (nth (n+1) p default_pair) in 
-      let L2:= snd (nth (n+1) p default_pair) in
-      (lt n (length p) -> 
-      comp_of_node L1 n1) /\
-      ((lt n (length p - 1) ->
-      L1 = L2 \/
-      (L1 <> L2 ->
-      (ssuccs n1 n2) /\
-      new_at L2 n2))).
-
-Check is_trans_path.
+    let ln := fst (split p) in 
+    let lm  := snd (split p) in
+      (is_path ln \/ (ssucc (nth_node 0 ln) (nth_node 1 ln) /\ 
+                     xmit (nth_node 0 ln) /\ 
+                     xmit (nth_node 1 ln) /\
+                     is_path (tl ln))) /\
+      forall (n:nat),   
+      (n < length p -> (nth_msg n lm) <[node] (nth_node n ln)) /\
+      (n < length p - 1 ->
+        let L1 := nth_msg n lm in 
+        let L2 := nth_msg (n+1) lm in 
+        let n1 := nth_node n ln in 
+        let n2 := nth_node (n+1) ln in
+          (L1 = L2 \/ (ssuccs n1 n2 /\ new_at L2 n2))).
 Print is_trans_path.
+
 (* Baby result : a single pair (n, L) is a trans-foramtion path *)
 Lemma anode_trans_path : 
   forall (n:node) (t:msg), 
   comp_of_node t n -> is_trans_path (cons (n,t) nil).
 Proof.
-intros.
+intros n t Hcom.
 unfold is_trans_path.
-assert (length ((n,t)::nil) = 1).
-auto.
-rewrite H0.
-intros. 
-split.
-intros.
-assert (n0 = 0).
-omega.
-rewrite H2.
-assert (nth 0 ((n,t)::nil) default_pair = (n,t)).
-auto.
-rewrite H3.
-simpl.
-exact H.
-assert (1-1 =0); auto.
-rewrite H1.
-intros.
-assert False. omega.
-elim H3.
-Qed.             
+simpl. split.
+  left. constructor. simpl in H.
+    apply False_ind; omega.
+   intros n1; split.
+     intro Hn1_lt. assert (n1=0). omega. subst. apply Hcom.
+     intros Hn1_lt. apply False_ind. omega.
+Qed.      
 
-Lemma concat_trans_path : 
-  forall p n L,
-    is_trans_path p /\
-    comp_of_node L n /\
-    (snd (nth (length p -1) p default_pair) = L \/
-    (snd (nth (length p -1) p default_pair) <> L ->
-    (ssuccs (fst(nth (length p -1) p default_pair)) n /\
-    new_at L n)) ->
-    is_trans_path (p ++ (cons (n,L) nil))).
-Proof. 
-Admitted.
-
-
-(* Some basic results for lists *)
-Lemma fst_eq : forall (l1 l2:list (prod node msg)), 
-               nth 0 (l1++l2) default_pair = nth 0 l1 default_pair.
-Proof. 
-Admitted.
-
-(* TODO : l1 has to be non-empty *)
-Lemma ignore_lasts : 
-  forall l1 l2, forall (i:nat),
-  lt i (length l1) -> nth i (l1++l2) default_pair = nth i l1 default_pair.
+(** * Proposition 11 *)
+(** For every atomic ingredient of a message, there exists 
+a component of the message such that the atomic value is 
+an ingredient of that component *)
+Lemma ingred_exists_comp: 
+  forall m a, atomic a -> a <st m -> exists L, a <st L /\ comp L m.
 Proof.
-Admitted.
+intros m a Hatom Hingred.
+induction m.
+exists a; split.
+  constructor.
+  assert (a = T t). apply atomic_ingred_eq; auto. 
+    subst. apply comp_atomic_cyclic; assumption.
 
-Lemma last_elem : 
-  forall (l1 : list (prod node msg)) x t, 
-  nth (length (l1++(x,t)::nil) - 1) (l1++(x,t)::nil) default_pair = (x,t).
+exists a; split.
+  constructor.
+  assert (a = K k). apply atomic_ingred_eq; auto.
+    subst. apply comp_atomic_cyclic; assumption.
+
+assert (Hor : ingred a m1 \/ ingred a m2).
+  apply ingred_pair. inversion Hatom; discriminate.
+  assumption.
+  case Hor.
+    intro Hst.
+    assert (Hex : exists L : msg, ingred a L /\ comp L m1).
+    exact (IHm1 Hst). destruct Hex as (L, (HaL, Hcom)).
+    exists L; split.
+      assumption.
+      apply preserve_comp_l; assumption.
+
+    intros Hst.
+        assert (Hex : exists L : msg, ingred a L /\ comp L m2).
+    exact (IHm2 Hst). destruct Hex as (L, (HaL, Hcom)).
+    exists L; split.
+      assumption.
+      apply preserve_comp_r; assumption.
+
+assert (Hex : exists L : msg, a <st L /\ L <com m).
+  apply IHm. apply ingred_enc with (k:=k).
+    inversion Hatom; discriminate.
+    assumption.
+    destruct Hex as (L, (HaL, Hcom)).
+  exists (E m k); split.
+    assumption.
+    apply comp_simple_cyclic.
+      apply simple_step. unfold not. intros Hpair.
+        inversion Hpair.
+Qed.
+
+
+Lemma ingred_exists_comp_of_node: 
+  forall (n:node) (a:msg), atomic a -> a <st (msg_of n) 
+                        -> exists L, a <st L /\ L <[node] n.
 Proof.
-Admitted.
+intros.
+apply ingred_exists_comp; assumption.
+Qed.
 
-
-Lemma ingred_earlier : 
+Lemma ingred_of_earlier : 
   forall (n:node) (a:msg), 
    (~ orig_at n a) /\ xmit n /\ ingred a (msg_of n) -> 
    exists n', ssuccs n' n /\ ingred a (msg_of n').
@@ -903,493 +729,133 @@ split. auto. split. auto.
 intros. apply H0.
 exists n'.
 split; auto.
-(*Restart.
-intros.
-assert (exists n:node, (orig_at n a)).
-apply ingred_originates_2.
-exists n; apply H.
-destruct H0.
-exists x.
-split. Focus 2. unfold orig_at in H0. tauto.
-destruct H as (H1, (H2, H3)).
-unfold orig_at in H0.
-unfold orig_at in H1.
-unfold not in H1.*)
 Qed.
 
-(* For every ingredient of *)
-Lemma occur_1 : forall x y, ~ (x = P x y).
-Proof.
-unfold not; intros; induction x.
-discriminate. discriminate. Focus 2. discriminate.
-apply IHx1. assert (x1 = P x1 x2  /\ x2 = y).
-apply pair_freeness. assumption.
-destruct H0. rewrite H1 in H0. assumption.
-Qed.
-
-Lemma occur_2 : forall x y, ~ (x = P y x).
-Proof.
-unfold not; intros; induction x.
-discriminate. discriminate. Focus 2. discriminate.
-apply IHx2. assert (x1 = y  /\ x2 = P x1 x2).
-apply pair_freeness. assumption.
-destruct H0. rewrite H0 in H1. assumption.
-Qed.
-
-Lemma occur_3 : forall x y, ~ (x = E x y).
-Proof.
-unfold not; intros; induction x.
-discriminate. discriminate. discriminate.
-apply IHx. assert (x = E x k  /\ k = y).
-apply enc_freeness. assumption.
-destruct H0. rewrite H1 in H0. assumption.
-Qed.
-
-Lemma occur_4 : forall x y z, ~ (x = P (P x y) z).
-Proof.
-unfold not. intro x. induction x.
-intros. discriminate.
-intros. discriminate.
-intros. Focus 2. discriminate.
-apply IHx1 with (y:=z) (z:=y). assert (x1 = P (P x1 x2) y  /\ x2=z).
-apply pair_freeness. assumption.
-destruct H0. rewrite H1 in H0. assumption.
-Qed.
-
-Lemma occur_5 : forall x y z, ~ (x = P (P y x) z) /\
-                              ~ (x = P y (P x z)) /\ 
-                              ~ (x = P y (P z x)).
-Proof.
-unfold not. intro x. induction x.
-intros. repeat split; discriminate.
-intros. repeat split; discriminate.
-intros.
-Focus 2. intros. repeat split; discriminate.
-repeat split.
-intros. assert (x1 =  (P y (P x1 x2)) /\ x2 =z).
-apply pair_freeness. auto.
-destruct H0. elim IHx1 with (y:=y) (z:=x2). 
-intros. destruct H3. apply H3. auto. 
-intros. assert (x1=y /\ x2=P (P x1 x2) z).
-apply pair_freeness. assumption. 
-elim IHx2 with (y:=x1) (z:=z).
-intros. apply H1. apply H0.
-intros. assert (x1=y /\ x2=P z (P x1 x2)). 
-apply pair_freeness. assumption.
-elim IHx2 with (y:=z) (z:=x1).
-intros. destruct H2. apply H3. apply H0.
-Qed.
-
-Lemma occur_6 : forall x y k, ~(x = E (P x y) k) /\ 
-                              ~(x = P (E x k) y).
-Proof.
-unfold not; intro x.
-induction x. intros.
-repeat split; discriminate.
-repeat split; discriminate.
-repeat split. discriminate.
-intros. assert (x1 = E (P x1 x2) k /\ x2 = y).
-apply pair_freeness. auto.
-elim IHx1 with (y:=x2) (k:=k).
-intros. apply H1. apply H0.
-split. intro. assert (x = P (E x k) y /\ k = k0).
-apply enc_freeness. assumption.
-apply IHx with (y:=y) (k:=k). apply H0.
-discriminate.
-Qed.
-
-Lemma occur_7 : forall x y k, ~(x = E (P y x) k) /\ 
-                              ~(x = P y (E x k)).
-Proof.
-unfold not; intro x.
-induction x. intros.
-repeat split; discriminate.
-repeat split; discriminate.
-repeat split. discriminate.
-intros. assert (x1 = y /\ x2 = E (P x1 x2) k).
-apply pair_freeness. auto.
-elim IHx2 with (y:=x1) (k:=k).
-intros. apply H1. apply H0.
-split. intro. assert (x = P y (E x k) /\ k = k0).
-apply enc_freeness. assumption.
-apply IHx with (y:=y) (k:=k). apply H0.
-discriminate.
-Qed.
-
-Lemma occur_8: forall x k k', ~ x = E (E x k) k'.
-Admitted.
-
-Lemma ingred_1_eq : forall x y, ingred_1 x y -> ingred_1 y x -> x = y.
-Proof.
-intros.
-inversion H. subst. 
-inversion H0. assert  (~ x = P (P x y0) y).
-apply occur_4. elim H3. auto. 
-assert (~ x =  P x0 (P x y0)). apply occur_5. elim H3. auto.
-assert (~ x = E (P x y0) k ). apply occur_6. elim H3. auto.
-subst. inversion H0.
-assert (~ x = P (P x0 x) y). apply occur_5. elim H3. auto.
-assert (~ x = P x1 (P x0 x)). apply occur_5. elim H3. auto.
-assert (~ x = E (P x0 x) k). apply occur_7. elim H3. auto.
-subst. inversion H0. 
-assert (~ x = P (E x k) y). apply occur_6. elim H3. auto.
-assert (~ x = P x0 (E x k)). apply occur_7. elim H3. auto.
-assert (~ x = E (E x k) k0). apply occur_8. elim H3. auto.
-Qed.
-
-Lemma ingred_1_neq : forall x y, ingred_1 x y -> ~ingred_1 y x.
-Proof.
-unfold not.
-intros.
-inversion H. subst. 
-inversion H0. assert  (~ x = P (P x y0) y).
-apply occur_4. elim H3. auto. 
-assert (~ x =  P x0 (P x y0)). apply occur_5. elim H3. auto.
-assert (~ x = E (P x y0) k ). apply occur_6. elim H3. auto.
-subst. inversion H0.
-assert (~ x = P (P x0 x) y). apply occur_5. elim H3. auto.
-assert (~ x = P x1 (P x0 x)). apply occur_5. elim H3. auto.
-assert (~ x = E (P x0 x) k). apply occur_7. elim H3. auto.
-subst. inversion H0. 
-assert (~ x = P (E x k) y). apply occur_6. elim H3. auto.
-assert (~ x = P x0 (E x k)). apply occur_7. elim H3. auto.
-assert (~ x = E (E x k) k0). apply occur_8. elim H3. auto.
-Qed.
-
-Lemma ingred_p_neq : forall x y, ingred_p x y -> ~ingred_p y x.
-Proof.
-unfold not.
-intros x y L R.
-induction L.
-inversion R. assert (~ ingred_1 y x).
-apply ingred_1_neq; assumption.
-elim H2; assumption.
-Admitted.
-
-Lemma ingred_1_not_eq : forall x y, ingred_1 x y -> x <> y.
-Proof.
-intros.
-inversion H.
-apply occur_1.
-apply occur_2.
-apply occur_3.
-Qed.
-
-Lemma ingred_1_nrefl : forall x, ~ ingred_1 x x.
-Proof.
-unfold not.
-intros. inversion H.
-assert (~ x = P x y). apply occur_1; assumption.
-elim H2; auto.
-assert (~ x = P x0 x). apply occur_2; assumption.
-elim H2; auto.
-assert (~ x = E x k). apply occur_3; assumption.
-elim H2; auto.
-Qed.
-
-
-Lemma ingred_p_nrefl : forall x, ~ ingred_p x x.
-Proof.
-unfold not.
-intros. inversion H. 
-assert (~ ingred_1 x x). apply ingred_1_nrefl. elim H2; auto.
-Admitted. 
-
-Lemma ingred_p_not_eq : forall x y, ingred_p x y -> x<>y.
-Proof.
-Admitted.
-
-Lemma ingred_eq : forall x y, ingred x y -> ingred y x -> x=y.
-Proof.
-intros; inversion H; auto.
-inversion H0. auto.
-assert (~ ingred_p y x).
-apply ingred_p_neq. auto. elim H5; auto.
-Qed.
-
-Lemma comp_1 : forall a b, is_atomic a -> comp a (P a b).
-Admitted.
-
-Lemma comp_2 : forall a b, is_atomic a -> comp a (P b a).
-Admitted.
-
-Lemma comp_3 : forall a k, comp (E a k) (E a k).
-Admitted.
-
-Lemma ingred_1_exists_comp : 
-  forall a m,is_atomic a -> ingred_1 a m -> exists L, ingred a L /\ comp L m.
-Proof.
-intros.
-inversion H0.
-exists a. split; [apply ingred_refl | apply comp_1]; auto.
-exists a. split; [apply ingred_refl | apply comp_2]; auto.
-exists (E a k). split.
-apply ingred_step. apply ingred_p_step. apply inenc1.
-apply comp_3.
-Qed.
-
-Lemma ingred_p_exists_comp : 
-  forall a m,is_atomic a -> ingred_p a m -> exists L, ingred a L /\ comp L m.
-Proof.
-intros.
-induction H0. apply ingred_1_exists_comp; auto.
-assert (exists L1 : msg, ingred x L1 /\ comp L1 y').
-apply ingred_1_exists_comp; auto.
-assert (is_atomic y' \/ ~ is_atomic y'). tauto.
-case H3.
-intros.
-assert (exists L : msg, ingred y' L /\ comp L y).
-apply IHingred_p; auto. destruct H5 as (L, H5). exists L.
-split. apply ingred_trans with (y:=y').
-apply ingred_step. apply ingred_p_step. auto. 
-apply H5. apply H5.
-Admitted.
-
-Lemma atomic_ingred_eq' : 
-  forall a d, ingred a (D d) -> a = D d.
-Proof. 
-intros.
-inversion H. auto.
-assert (size (D d) = 1). auto.
-assert (size a > 0). apply zero_lt_size.
-assert (size a >= size (D d)). rewrite H2. omega.
-apply ingred_same_size_eq. split; assumption.
-Qed. 
-
-Lemma atomic_ingred_eq : 
-   forall x a, is_atomic a /\ ingred x a -> x=a.
-Proof.
-intros.
-destruct H.
-inversion H.
-inversion H0. auto.
-assert (size (D x0) = 1). auto.
-assert (size x > 0). apply zero_lt_size.
-assert (size x >= size (D x0)). omega.
-apply ingred_same_size_eq. split. rewrite H1. assumption. assumption.
-assert (size (K k) = 1). auto.
-assert (size x > 0). apply zero_lt_size.
-assert (size x >= size (K k)). omega.
-apply ingred_same_size_eq. split. rewrite H1. assumption. assumption.
-Qed.
-
-Lemma comp_cyclic : forall a, is_atomic a -> comp a a.
-Proof.
-Admitted.
-
-Lemma comp_enc_cyclic : forall x k, comp (E x k) (E x k).
-Admitted.
-
-Lemma preserve_comp_l : forall x m1 m2, comp x m1 -> comp x (P m1 m2).
-Proof. 
-Admitted.
-
-Lemma preserve_comp_r : forall x m1 m2, comp x m2 -> comp x (P m1 m2).
-Admitted.
-
-Lemma ingred_exists_comp: 
-  forall m a, is_atomic a /\ ingred a m -> exists L, ingred a L /\ comp L m.
-Proof.
-intros.
-destruct H.
-induction m.
-assert (a = D d). apply atomic_ingred_eq. 
-split. auto. assumption.
-exists a. split. apply ingred_refl. 
-rewrite H1. apply comp_cyclic; auto.
-assert (a = K k). apply atomic_ingred_eq. 
-split. auto. assumption.
-exists a. split. apply ingred_refl. 
-rewrite H1. apply comp_cyclic; auto.
-assert (ingred a m1 \/ ingred a m2).
-apply ingred_pair. split. assumption.
-inversion H; discriminate.
-case H1.
-intro. 
-assert (exists L : msg, ingred a L /\ comp L m1).
-apply IHm1. assumption.
-destruct H3 as (L, (H3, H4)).
-exists L. split. assumption. apply preserve_comp_l; assumption.
-intro.
-assert (exists L : msg, ingred a L /\ comp L m2).
-apply IHm2. assumption.
-destruct H3 as (L, (H3, H4)).
-exists L. split. assumption. apply preserve_comp_r; assumption.
-exists (E m k). split. assumption. apply comp_enc_cyclic.
-Qed.
-
-Lemma ingred_exists_comp_of_node: 
-  forall (n:node) (a:msg),
-    is_atomic a /\ ingred a (msg_of n) -> exists L, ingred a L /\ comp_of_node L n.
-Proof.
-intros.
-apply ingred_exists_comp.
-auto.
-Qed.
-
-Lemma not_new_exists : 
-  forall n L, ~ new_at L n ->
-  exists n', ssuccs n' n /\ new_at L n'.
-Proof.
-Admitted.
- 
+(** Backward construction *)
 Lemma backward_construction : 
   forall (n:node) (a L:msg), 
-    comp_of_node L n /\ ~ orig_at n a /\ ingred a L ->
+    atomic a -> L <[node] n -> ~ orig_at n a -> a <st L ->
     exists (n':node) (L':msg), 
-      prec n' n /\
-      ingred a L' /\ 
-      comp_of_node L' n' /\ 
-      (L' = L \/ (L' <> L -> ssuccs n' n /\ new_at L n)).
+      (msg_deliver n' n \/ ssuccs n' n) /\ a <st L' /\ L' <[node] n' /\ 
+      (L' = L \/ (ssuccs n' n /\ new_at L n)).
 Proof.
-intros.
-assert (xmit n \/ recv n).
-apply xmit_or_recv.
-case H0.
-Focus 2.
-intros.
-assert (exists (n':node), msg_deliver n' n). 
-apply was_sent. auto.
-destruct H2 as (n', H2).
-exists n'.
-exists L.
-split. apply deliver_prec. auto.
-split. apply H.
-split. apply msg_deliver_comp with (n1:=n') (n2:=n).
-split. auto. apply H.
-left. auto.  
-intros.
-assert (new_at L n \/ ~(new_at L n)). tauto.
-case H2.
-intros. assert (exists n', ssuccs n' n /\ ingred a (msg_of n')).
-apply ingred_earlier. repeat split; auto. apply H.
-apply ingred_trans with (y:=L). 
-apply H. apply comp_of_node_imp_ingred. apply H.
-destruct H4 as (n', (H4, H5)).
-assert (exists L', ingred a L' /\ comp_of_node L' n').
-apply ingred_exists_comp_of_node. assumption.
-destruct H6 as (L', (H6, H7)).
-exists n'.
-exists L'.
-split. apply ssuccs_prec. apply H4.
-split. assumption.
-split. assumption.
-right. intros. split; auto.
-intros.
-assert (exists n', ssuccs n' n /\ new_at L n').
-apply not_new_exists. auto.
-destruct H4 as (n', H4).
-exists n'. 
-exists L.
-split. apply ssuccs_prec. apply H4.
-split. apply H.
-split. apply new_at_imp_comp. apply H4.
-auto.
+intros n a L Hatom Hcom Hnorig Hst.
+assert (Hx_r : xmit n \/ recv n). apply xmit_or_recv.
+case Hx_r.
+  Focus 2. intros Hrecv.
+    assert (Hex : exists (n':node), msg_deliver n' n). 
+    apply was_sent. auto.
+    destruct Hex as (n', Hmsg_deli).
+    exists n'; exists L.
+      split. left; auto.
+      split. exact Hst.
+      split. apply msg_deliver_comp with (n1:=n') (n2:=n).
+      split; assumption.
+      left. trivial.  
+
+  intros Hxmit.
+  assert (Hdec : new_at L n \/ ~(new_at L n)). tauto.
+  case Hdec.
+    intros Hnew. 
+    assert (Hex2 :exists n1, ssuccs n1 n /\ ingred a (msg_of n1)).
+    apply ingred_of_earlier. repeat split; auto.
+    apply ingred_trans with (y:=L). 
+      assumption.
+      apply comp_of_node_imp_ingred; assumption.
+    destruct Hex2 as (n1, (Hssucc, Hastn1)).
+    assert (HexL1 : exists L1, ingred a L1 /\ comp_of_node L1 n1).
+      apply ingred_exists_comp_of_node; assumption.
+      destruct HexL1 as (L1, (H1, H2)).
+    exists n1; exists L1.
+      split. right. assumption.
+      split. assumption.
+      split. assumption.
+      right. split; auto.
+
+  intros Hnnew.
+  assert (Hex : exists n', ssuccs n' n /\ L <[node] n').
+    apply not_new_exists; auto.
+  destruct Hex as (n', (Hssucc, Hn)).
+  exists n'; exists L.
+    split. right. auto.
+    split. auto.
+    split. assumption.
+    left; trivial.
 Qed.
 
-Definition P11 : node -> Prop := 
+Definition Prop11 : node -> Prop := 
   fun (n':node) => 
   forall (a t:msg), 
-  ingred a t /\ comp_of_node t n' -> 
-  exists p, is_trans_path p /\ 
-  orig_at (fst (nth 0 p default_pair)) a /\
-  fst (nth (length p - 1) p default_pair) = n' /\ 
-  snd (nth (length p -1) p default_pair) = t /\
-  forall (i:nat), lt i (length p) -> ingred a (snd (nth i p default_pair)).
+  atomic a -> a <st t /\ t <[node] n' -> 
+  exists p, let ln := fst (split p) in 
+            let lm := snd (split p) in 
+            is_trans_path p /\ 
+            orig_at (nth_node 0 ln) a /\
+            nth_node (length p - 1) ln = n' /\ 
+            nth_msg (length p -1) lm = t /\
+            forall (i:nat), i < length p -> a <st (nth_msg i lm).
               
-(*Proposition 11 *)
+(* The main result *)
 Lemma proposition11 : 
-  forall (n':node), P11 n'.
+  forall (n':node), Prop11 n'.
 Proof.
-apply induct_ok.
+apply well_founded_ind with (R:=prec).
+exact wf_prec.
 intros.
-unfold P11.
-unfold P11 in H.
+unfold Prop11.
+unfold Prop11 in H.
 intros.
-destruct H0 as (H1, H2).
-assert (orig_at x a \/ ~ orig_at x a).
-tauto.
-case H0.
-intros.
-exists (cons (x, t) nil).
-simpl.
-split.
-apply anode_trans_path with (n:=x) (t:=t).
-exact H2.
-split; auto; split; auto; split; auto.
-intros.
-assert (i=0). omega.
-rewrite H5;auto.
-intros.
-assert (exists (n':node) (L':msg), prec n' x /\
-                               ingred a L' /\ 
-                               comp_of_node L' n' /\ 
-                               (L' = t \/
-                               (L' <> t -> 
-                               ssuccs n' x /\ 
-                               new_at t x))).
-apply backward_construction. auto.
-destruct H4 as (n', (L', (H4, (H5, H6)))).
-assert (forall a t : msg,
-        ingred a t /\ comp_of_node t n' ->
-        exists p : list (node * msg),
-        is_trans_path p /\
-        orig_at (fst (nth 0 p default_pair)) a /\
-        fst (nth (length p - 1) p default_pair) = n' /\
-        snd (nth (length p - 1) p default_pair) = t /\
-        (forall i : nat, i < length p -> 
-                         ingred a (snd (nth i p default_pair)))).
-apply H with (y:=n'). auto.
-assert (exists p : list (node * msg),
-       is_trans_path p /\
-       orig_at (fst (nth 0 p default_pair)) a /\
-       fst (nth (length p - 1) p default_pair) = n' /\
-       snd (nth (length p - 1) p default_pair) = L' /\
-       (forall i : nat, i < length p -> 
-                        ingred a (snd (nth i p default_pair)))).
-apply H7.  
-split. auto. apply H6.
-destruct H8 as (p0,IH).
-destruct IH as (IH1, (IH2, (IH3, (IH4, IH5)))).
-exists (p0 ++ (cons (x,t) nil)).
-split.
-apply concat_trans_path.
-rewrite IH4. rewrite IH3. apply H6.
-split. 
-assert ((nth 0 (p0 ++ (x, t) :: nil) default_pair)=
-        (nth 0 p0 default_pair)).
-apply fst_eq.
-rewrite H8. auto.
-assert (nth (length (p0 ++ (x, t) :: nil) - 1) 
-       (p0 ++ (x, t) :: nil) default_pair = (x,t)).
-apply last_elem.
-rewrite H8.
-split. auto. split. auto.
-intros.
-assert (length (p0 ++ (x, t) :: nil) = length p0 + 1).
-apply app_length.
-rewrite H10 in H9.
-assert (i < length p0 \/ i = length (p0 ++ (x, t) :: nil) -1).
-omega.
-case H11.
-intros.
-assert (nth i (p0 ++ (x, t) :: nil) default_pair = nth i p0 default_pair).
-apply ignore_lasts. auto.
-rewrite H13. apply IH5. auto.
-intros.
-rewrite H12.
-rewrite last_elem. simpl. auto.
-Qed.
+destruct H1 as (H1, H2).
+assert (orig_at x a \/ ~ orig_at x a). tauto.
+case H3.
+  intros.
+  exists (cons (x, t) nil).
+  simpl. split.
+    apply anode_trans_path with (n:=x) (t:=t). exact H2.
+    split; auto; split; auto; split; auto.
+  intros.
+    assert (i=0). omega.
+    rewrite H6;auto.
 
-(* *** New definition for ingredients *)
-Inductive Subterm : msg -> msg -> Prop :=
-| st_refl : forall m, Subterm m m
-| st_join_l : forall st l r, 
-    Subterm st l -> Subterm st (P l r)
-| st_join_r : forall st l r, 
-    Subterm st r -> Subterm st (P l r)
-| st_encr : forall st t k, 
-    Subterm st t -> Subterm st (E t k).
-
-Lemma subterm_tot : forall x y, Subterm x y /\ Subterm y x -> x=y.
+  intros.
+  assert (Hex : exists (n':node) (L':msg), 
+      (msg_deliver n' x \/ ssuccs n' x) /\ a <st L' /\ L' <[node] n' /\ 
+      (L' = t \/ (ssuccs n' x /\ new_at t x))).
+  apply backward_construction; assumption.
+  destruct Hex as (n', (L', (Hor, (Hst, (Hcom, Hlast))))).
+  assert (IH : forall a t : msg,
+    atomic a ->
+    a <st t /\ t<[node]n' ->
+    exists p : list (node * msg),
+      is_trans_path p /\
+      orig_at (nth_node 0 (fst (split p))) a /\
+      nth_node (length p - 1) (fst (split p)) = n' /\
+      nth_msg (length p - 1) (snd (split p)) = t /\
+      (forall i : nat, i < length p -> a <st nth_msg i (snd (split p)))).
+  apply H with (y:= n'). case Hor.
+    apply msg_deliver_prec.
+    apply ssuccs_prec.
+  assert (Hex2 : exists p : list (node * msg),
+      is_trans_path p /\
+      orig_at (nth_node 0 (fst (split p))) a /\
+      nth_node (length p - 1) (fst (split p)) = n' /\
+      nth_msg (length p - 1) (snd (split p)) = L' /\
+      (forall i : nat, i < length p -> a <st nth_msg i (snd (split p)))).
+    apply IH. assumption. split; assumption.
+  destruct Hex2 as (p0, (Hex2, (Hex3, (Hex4, (Hex5, Hex6))))).
+  assert (orig_at n' a \/ ~orig_at n' a). tauto.
+  case H5.
+    intro Horign'.
+      exists ((n', L')::(x,t)::nil). simpl.
+        split. admit.
+        split. auto.
+        split. auto.
+        split. auto.
+        intros. assert (i=0 \/ i=1). omega.
+          case H7. 
+            intro. subst; auto.
+            intro; subst; auto.
+    intro Hnorig.
+      exists (p0++(n',L')::nil).
 Admitted.
+

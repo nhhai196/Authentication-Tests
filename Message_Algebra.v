@@ -1,17 +1,9 @@
-(* Some standard library imports *)
 
-(* Require Import Logic List ListSet Arith Peano_dec Omega. *)
-(* Require Import ProofIrrelevance. *)
-(* Require Import Ensembles.  *)
-(* Require Import LibTactics. *)
-(* Require Import CoLoRRelDec CoLoRRelSub. *)
-(* Require Import strictorder set_rep_equiv util. *)
-(* Require Import String. *)
-
-Require Import Relation_Definitions Relation_Operators Omega Arith.
+Require Import Relation_Definitions Relation_Operators 
+               Omega Arith ListSet.
 
 (* ******************************************************* *)
-(* VERSION 3 *)
+(* VERSION 4 *)
 
 (** * Discusson *)
 
@@ -54,26 +46,15 @@ Require Import Relation_Definitions Relation_Operators Omega Arith.
 *)
 
 
-(** * Abstract types *)
+(** * Texts *)
+(** ** Definition *)
+Variable Text : Set.
 
-Variable var   : Type.
-Variable name  : Type.
-Variable nonce : Type. 
-Variable data  : Type.
-
-
-Variable eq_var_dec : forall (x y:var), {x = y} + {x <> y}.
-Hint Resolve eq_var_dec.
-Variable eq_name_dec : forall (x y:name), {x = y} + {x <> y}.
-Hint Resolve eq_name_dec.
-Variable eq_nonce_dec : forall (x y:nonce), {x = y} + {x <> y}.
-Hint Resolve eq_nonce_dec.
-Variable eq_data_dec : forall (x y:data), {x = y} + {x <> y}.
-Hint Resolve eq_data_dec.
-
+(** ** Decidable equality for texts *)
+Variable eq_text_dec : forall (x y:Text), {x = y} + {x <> y}.
+Hint Resolve eq_text_dec.
 
 (** * Keys *)
-
 
 (** Interesting design choices about keys. Here we do not model
    symmetric and asymmetric keys as separate types; the distinction is
@@ -81,314 +62,190 @@ Hint Resolve eq_data_dec.
    Sometimes simpler.  Possible issue is with key inverses...?
 *)
 
-(* Require Import ListSet. *)
+Variable Key : Set.
 
-Variable rawkey : Type.
+(** ** Inverse relation *)
+Variable inv : relation Key.
 
-Inductive key :=
-| Sk : rawkey -> key
-| Pubk : name -> key
-| Privk : name -> key .
-
-Variable eq_rawkey_dec : forall (x y:rawkey), {x=y} + {x<>y}.
-Hint Resolve eq_rawkey_dec.
-
-Definition eq_key_dec : forall (x y:key), {x=y} + {x<>y}.
-Proof.
-decide equality.
-Qed.
+(** ** Decidable equality for key *)
+Variable eq_key_dec : forall (x y:Key), {x=y} + {x<>y}.
 Hint Resolve eq_key_dec.
 
-Definition invk : key -> key  :=
-  fun (k:key) =>
-    match k with 
-      | Sk x => Sk x
-      | Pubk n => Privk n
-      | Privk n => Pubk n
-    end.
-
-
-(** * Main message definitions *)
-
+(** * Messages *)
+(** ** Inductive  definition for messages *)
 Inductive msg :=
-| D : data -> msg
-| K : key -> msg
-| P : msg -> msg -> msg
-| E : msg -> key -> msg.
+  | T : Text -> msg
+  | K : Key -> msg
+  | P : msg -> msg -> msg
+  | E : msg -> Key -> msg.
 Hint Constructors msg.
 
+(** ** Decidable equality for messages *)
 Definition eq_msg_dec : forall x y : msg,  
   {x = y} + {x <> y}.
 Proof.
 intros.
 decide equality.
 Qed.
-
 Hint Resolve eq_msg_dec.
 
-(** Atomic values *)
-Inductive is_atomic : msg -> Prop := 
-  |a_data : forall x, is_atomic (D x)
-  |a_key : forall k, is_atomic (K k).
-Hint Constructors is_atomic.
+(** ** Atomic messages *)
+Inductive atomic : msg -> Prop := 
+  |atomic_text : forall t, atomic (T t)
+  |atomic_key : forall k, atomic (K k).
+Hint Constructors atomic.
 
-(** Concatenated terms or messages *)
-Inductive concat : (msg -> Prop) := 
-  | conc : forall m1 m2, concat (P m1 m2).
-Hint Constructors concat.
+(** ** Concatenated messages *)
+Inductive pair : (msg -> Prop) := 
+  | pair_step : forall m1 m2, pair (P m1 m2).
+Hint Constructors pair.
 
-(** Encryption *)
-Inductive is_enc : msg -> Prop :=
-  | encr : forall m k, is_enc (E m k).
-Hint Constructors is_enc.
+(** ** Encrypted messages *)
+Inductive enc : msg -> Prop :=
+  | enc_step : forall m k, enc (E m k).
+Hint Constructors enc.
 
-
+(** ** Basic messages *)
 (** Treat basic as a predicate, not a subtype *)
-Inductive is_basic : msg -> Prop :=
-| bdata : forall x, is_basic (D x)
-| bkey : forall x, is_basic (K x)  .
-Hint Constructors is_basic.
+Inductive basic : msg -> Prop :=
+  | b_text : forall t, basic (T t)
+  | b_key : forall k, basic (K k)  .
+Hint Constructors basic.
 
-(* Some basic results about atomic and concat *)
-Lemma concat_not_atomic :
-  forall m, concat m -> ~ is_atomic m.
+(** ** Simple message *)
+(** A message is simple if it is not a concatenated (paired) message *)
+Inductive simple : msg -> Prop :=
+  | simple_step : forall m, ~ pair m -> simple m.
+
+Lemma enc_imp_simple : forall x k, simple (E x k).
 Proof.
-intros.
+intros x k.
+apply simple_step.
+unfold not. intro Hpair.
+inversion Hpair.
+Qed.
+
+(** ** Some basic results about atomic, paired, simple, and basic messages *)
+Lemma pair_not_atomic :
+  forall m, pair m -> ~ atomic m.
+Proof.
 unfold not.
-intros. inversion H. inversion H0.
-symmetry in H1. rewrite H1 in H2. discriminate.
-symmetry in H1. rewrite H1 in H2. discriminate.
+intros m HConc HAtom.
+inversion HConc; inversion HAtom; subst; discriminate.
 Qed.
 
-Lemma atomic_not_concat:
-  forall m, is_atomic m -> ~concat m.
+Lemma atom_not_pair:
+  forall m, atomic m -> ~ pair m.
 Proof.
-intros.
-unfold not. intros.
-inversion H0. inversion H. 
-symmetry in H1. rewrite H1 in H2.
-discriminate.
-symmetry in H1. rewrite H1 in H2.
-discriminate.
+unfold not.
+intros m HAtom Hpair.
+inversion Hpair; inversion HAtom; subst; discriminate.
 Qed.
 
-Lemma enc_not_basic : forall m1 m2, ~ is_basic (P m1 m2).
+Lemma enc_not_basic : forall m1 m2, ~ basic (P m1 m2).
 Proof.
-intros.
-unfold not. intros. inversion H.
+unfold not.
+intros m1 m2 HBasic.
+inversion HBasic.
 Qed.
 
-(**  * Three notions of subterm *)
-
-(** ** Ingredient.   Called "carried by" in some CPSA pubs. *) 
-
-(** *** Basis *)
-Inductive ingred_1 :  msg -> msg -> Prop :=
-| inpair1 : forall x y, ingred_1  x (P x y)
-| inpair2 : forall x y, ingred_1  y (P x y)
-| inenc1  : forall x k, ingred_1 x (E x k)  .
-Hint Constructors ingred_1.
-
-(** *** Transitive closure *)
-Inductive ingred_p (x:msg) : msg -> Prop :=
-| ingred_p_step y : ingred_1 x y -> ingred_p x y
-| ingred_p_trans y y' : ingred_1 x y' -> ingred_p y' y -> ingred_p x y.
-Hint Constructors ingred_p.
-
-(** ***  Reflexive-Transitive closure *)
-Inductive ingred (x: msg) : msg -> Prop :=
-| ingred_refl : ingred x x
-| ingred_step y  : ingred_p x y -> ingred x y.
-Hint Constructors ingred.
-Print ingred_ind.
-
-Lemma ingred_p_transitive : 
-  forall (x y z:msg), ingred_p x y -> ingred_p y z -> ingred_p x z.
+Lemma atomic_imp_simple : forall a, atomic a -> simple a.
 Proof.
-intros.
-induction H.
-apply ingred_p_trans with (y':=y); assumption.
-apply ingred_p_trans with (y':= y'). auto.
-apply IHingred_p. auto.
+intros a Hatom.
+apply simple_step.
+apply atom_not_pair; assumption.
 Qed.
 
+(** * Freeness assumptions about pair and encryption *)
+(* Both of them are provable in this context *)
+
+(** ** pair freeness *)
+(** If two concatenated (or encrypted) messages are equal then each
+component of the first is equal the corresponding componet of the second *)
+Lemma pair_free : forall m1 m2 m1' m2', 
+                 P m1 m2 = P m1' m2' -> m1 = m1' /\ m2 = m2'.
+Proof.
+intros m1 m2 m1' m2' HPeq.
+injection HPeq. auto.
+Qed.
+
+(** ** Encryption freeness *)
+Lemma enc_free : forall m k m' k',
+                 E m k = E m' k' -> m = m' /\ k = k'.
+Proof.
+intros m k m' k' HEeq.
+injection HEeq.
+auto.
+Qed.
+
+(** * Ingredient.   Called "carried by" in some CPSA pubs. *) 
+Inductive ingred : msg -> msg -> Prop :=
+| ingred_refl : forall m, ingred m m
+| ingred_pair_l : forall m l r, 
+    ingred m l -> ingred m (P l r)
+| ingred_pair_r : forall m l r, 
+    ingred m r -> ingred m (P l r)
+| ingred_encr : forall m x k, 
+    ingred m x -> ingred m (E x k).
+
+Notation "a <st b" := (ingred a b) (at level 30) : ss_scope.
+
+Open Scope ss_scope.
+
+(** ** Ingred is transitive *)
 Lemma ingred_trans : 
-  forall (x y z:msg), ingred x y -> ingred y z -> ingred x z.
+  forall x y z,  x <st y -> y <st z -> x <st z.
 Proof.
-intros.
-induction H. auto.
-inversion H0. subst. 
-apply ingred_step; assumption.
-apply ingred_step.
-apply ingred_p_transitive with (y:=y); assumption.
+intros x y z Sxy Syz.
+induction Syz.
+  subst; auto.
+  subst; apply ingred_pair_l; apply IHSyz; assumption.
+  subst; apply ingred_pair_r; apply IHSyz; assumption.
+  apply ingred_encr; apply IHSyz; assumption.
 Qed.
+Hint Resolve ingred_trans.
 
-Lemma ingred_dec : forall x y, {ingred x y} + {~ingred x y}.
+(** ** Some other basic results about ingredients *)
+Lemma ingred_pair : forall (x y z:msg), x <> (P y z) ->
+                                  x <st (P y z) -> 
+                                  x <st y \/ x <st z.
 Proof.
-Admitted.
-Hint Resolve ingred_dec.
-Print ingred_ind.
-
-(** *** Some basic results about ingred *)
-Lemma ingred_1_pair : forall x y z, ingred_1 x (P y z) -> 
-                    ingred x y \/ ingred x z.
-Proof.
-intros.
-inversion H.
-left. apply ingred_refl.
-right. apply ingred_refl.
+intros x y z Hneq Hst.
+inversion Hst; subst.
+  elim Hneq; trivial.
+  auto.
+  auto.
 Qed.
+Hint Resolve ingred_pair.
 
-(* Induction on ingred_p x P(P y z) doesn't keep the information 
- about (P y z), so we have to use "REMEMBER" here *)
-Lemma ingred_p_pair : forall y z x, ingred_p x (P y z) -> 
-                    ingred x y \/ ingred x z.
+Lemma ingred_enc : forall (x y :msg) (k:Key), x <> (E y k) ->
+                                 x <st (E y k) ->
+                                 x <st y.
 Proof.
-intros.
-remember (P y z) as e in H.
-induction H.
-apply ingred_1_pair. rewrite Heqe in H. assumption.
-assert (ingred y' y \/ ingred y' z). apply IHingred_p. auto.
-assert (ingred x y'). apply ingred_step. apply ingred_p_step. assumption.
-case H1.
-intros. left. apply ingred_trans with (y:=y'); assumption.
-intros. right. apply ingred_trans with (y:=y'); assumption.
+intros x y k Hneq Hst.
+inversion Hst; subst.
+  elim Hneq; trivial.
+  auto.
 Qed.
+Hint Resolve ingred_enc.
 
-Lemma ingred_pair : forall x y z, ingred x (P y z) /\ x <> (P y z) -> 
-                    ingred x y \/ ingred x z.
-Proof.
-intros.
-destruct H as (H1, H2).
-inversion H1. elim H2. auto.
-apply ingred_p_pair. assumption.
-Qed.
-
-(** Similarly for encryption *)
-Lemma ingred_1_enc : forall x y k, ingred_1 x (E y k) -> ingred x y.
-Proof.
-intros.
-inversion H. auto.
-Qed.
-
-Lemma ingred_p_enc : forall x y k, ingred_p x (E y k) -> ingred x y.
-Proof.
-intros.
-remember (E y k) as e in H.
-induction H.
-apply ingred_1_enc with (k:=k).  rewrite Heqe in H. assumption.
-assert (ingred y' y). apply IHingred_p. assumption.
-assert (ingred x y'). apply ingred_step. apply ingred_p_step. assumption.
-apply ingred_trans with (y:=y'); assumption.
-Qed.
-
-Lemma ingred_enc : forall x y k, ingred x (E y k) /\ x <> (E y k) -> ingred x y. 
-Proof. 
-intros.
-destruct H.
-inversion H.
-elim H0; auto.
-apply ingred_p_enc with (k:=k). assumption.
-Qed.
-
-(** ** "Strong ingredient", written as [<<] in EPPSG *)
-(** *** Basis *)
-
-Inductive strong_ingred_1 :  msg -> msg -> Prop :=
-| strpair1 : forall x y, strong_ingred_1  x (P x y)
-| strpair2 : forall x y, strong_ingred_1  y (P x y)
-| strenc1  : forall x k, strong_ingred_1 x (E x k)
-| strkeysk :  forall x, strong_ingred_1 (K (Sk x)) (K (Sk x))
-(*| strkeypubk :  forall n, strong_ingred_1 (N n) (K (Pubk n))
-| strkeyprivk :  forall n, strong_ingred_1 (N n) (K (Privk n))*).
-
-(** ** Transitive  closures *)
-Inductive strong_ingred_p (x: msg) : msg -> Prop :=
-| strong_ingred_p_step y : strong_ingred_1 x y -> strong_ingred_p x y
-| strong_ingred_p_trans (y y':msg) : strong_ingred_1 x y' -> strong_ingred_p y' y -> strong_ingred_p x y.
-
-
-(** ***  Reflexive-Transitive closure *)
-Inductive strong_ingred (x: msg) : msg -> Prop :=
-| strong_ingred_refl : strong_ingred x x 
-| strong_ingred_step y  : strong_ingred_p x y -> strong_ingred x y.
-
-
-(** ** The most liberal, the traditional notion of subterm *)
-
-(** *** Basis *)
-Inductive occurs_in_1 :  msg -> msg -> Prop :=
-| opair1 : forall x y, occurs_in_1  x (P x y)
-| opair2 : forall x y, occurs_in_1  y (P x y)
-| oenc1  : forall x k, occurs_in_1 x (E x k)
-| okeysk :  forall x, occurs_in_1 (K (Sk x)) (K (Sk x))
-(*| okeypubk :  forall n, occurs_in_1 (N n) (K (Pubk n))
-| okeyprivk :  forall n, occurs_in_1 (N n) (K (Privk n))*)
-| oenc2  : forall x k, occurs_in_1 (K k) (E x k)  .
-
-(** ***  Transitive closure *)
-Inductive occurs_in_p (x: msg) : msg -> Prop :=
-| occurs_in_p_step y : occurs_in_1 x y -> occurs_in_p x y
-| occurs_in_p_trans y y' : occurs_in_1 x y' -> occurs_in_p y' y -> occurs_in_p x y.
-
-(** ***  Reflexive-Transitive closure *)
-Inductive occurs_in (x: msg) : msg -> Prop :=
-| occurs_in_refl : occurs_in x x
-| occurs_in_step y : occurs_in_p x y -> occurs_in x y.
-
-
-(* existence of maximal encryption
-
-Inductive maximal_enc : msg -> msg -> Prop :=
-  | max_enc1 : forall m1 m2, (ingred m1 m2 /\ is_enc m1 /\ 
-               (forall m, ingred m m2 /\ is_enc m -> ingred m m1)) ->
-               maximal_enc m1 m2.
-
-Lemma exists_1_max_enc : forall m, (exists e, ingred_1 e m /\ is_enc e) -> 
-                          (exists e', maximal_enc e' m).
-Proof.
-intros.
-destruct H as (e, (H1, H2)).
-induction H1.
-exists x. apply max_enc1.
-
-Lemma exists_p_max_enc : forall m, (exists e, ingred_p e m /\ is_enc e) -> 
-                          (exists e', maximal_enc e' m).
-Proof.
-intros.
-destruct H as (e, (H1, H2)).
-induction H1.
-
-Lemma exists_max_enc : forall m, (exists e, ingred e m /\ is_enc e) -> 
-                          (exists e', maximal_enc e' m).
-Proof.
-intros. destruct H as (e, (H1, H2)).
-induction H1. exists e. apply max_enc1.
-repeat split. apply ingred_refl. auto. 
-intros. apply H.
-*)
-(* ** Size of messages *) 
-(* A tool for reasoning about ingredients *)
-
+(** * Size of messages *)
+(** ** Definition *)
 Fixpoint size (m:msg) :=
   match m with 
-   | D x => 1
+   | T t => 1
    | K k => 1 
    | P m1 m2 => (size m1) + (size m2)
    | E x k => (size x) + 1
    end.
 
-Check size.
-
-(* Size of every message is always positive *)
+(** Size of every message is always positive *)
 Lemma zero_lt_size : forall x, 0 < size x.
 Proof.
 intro x.
-induction x.
-auto. auto.
-simpl; omega. 
-simpl; omega.
+induction x; simpl; omega.
 Qed.
+Hint Resolve zero_lt_size.
 
 Lemma size_lt_plus_l : forall x y, size x < size x + size y.
 Proof.
@@ -399,60 +256,140 @@ rewrite (plus_comm (size x) 0) in H.
 rewrite (plus_O_n (size x)) in H. auto. 
 Qed.
 
-(* ** Relation between ingredient and size *)
-(* Given a message, then size of an ingredient is always
-less than or equal size of message itself *)
+(** ** Realtionship between ingred and size *)
 
-Lemma ingred_1_lt :
-  forall x y, ingred_1 x y -> size(x) < size(y).
-Proof.
-intros x y H.
-inversion H.
-simpl. apply size_lt_plus_l.
-simpl. rewrite plus_comm.
-apply size_lt_plus_l.
-simpl; omega.
-Qed.
-
-Lemma ingred_p_lt : 
-  forall x y, ingred_p x y -> size(x) < size(y).
-Proof.
-intros x y H.
-induction H.
-apply ingred_1_lt; assumption.
-assert (size x < size y'). apply ingred_1_lt; assumption.
-apply lt_trans with (m:=size y'); assumption.
-Qed.
-
+(** Size of an ingredient x is always less than or equal
+ size of message y if x is an ingredient of y. *)
 Lemma ingred_lt : 
-  forall x y, ingred x y -> size(x) <= size(y).
+  forall x y, x <st y -> size(x) <= size(y).
 Proof. 
-intros x y H.
-inversion H.
-auto.
-assert (size x < size y).
-apply ingred_p_lt; assumption.
-omega.
-Qed.
- 
-(* *) 
-Lemma ingred_same_size_eq : 
-  forall x y, ingred x y /\ size(x) >= size(y) -> x=y.
-Proof.
-intros x y H.
-destruct H as (H0, H1).
-inversion H0; auto.
-assert (size x < size y). apply ingred_p_lt; assumption.
-assert False. omega. elim H4.
+intros x y Hst.
+induction Hst; subst; simpl; omega.
 Qed.
 
-(* If each message ia an ingredient of the other, 
-then they are the same *)
-Lemma ingred_eq : forall x y, ingred x y -> ingred y x -> x=y.
+Lemma ingred_ge_size_eq : 
+  forall x y, x <st y -> size(x) >= size(y) -> x=y.
 Proof.
-intros.
-assert (size x <= size y). apply ingred_lt; assumption.
-assert (size y <= size x). apply ingred_lt; assumption.
-assert (size x = size y). omega. 
-apply ingred_same_size_eq. split; assumption.
+intros x y Hst Hsize_gt.
+inversion Hst; subst.
+  auto.
+
+  assert (Hx_lt_l : size x <= size l). apply ingred_lt; auto.
+   assert (Hl_lt_Plr : size l < size (P l r)).
+     simpl. apply size_lt_plus_l.
+   assert (Hx_lt_Plr : size x < size (P l r)). omega.
+   contradict Hsize_gt. omega.
+
+  assert (Hx_lt_r : size x <= size r). apply ingred_lt; auto.
+   assert (Hl_lt_Plr : size r < size (P l r)).
+     simpl. rewrite <- (plus_comm). apply size_lt_plus_l.
+   assert (Hx_lt_Plr : size x < size (P l r)). omega.
+   contradict Hsize_gt. omega.
+
+  assert (Hx_lt_l : size x <= size x0). apply ingred_lt; auto.
+   assert (Hx0_lt_E : size x0 < size (E x0 k)).
+     simpl. omega.
+   assert (Hx_lt_E : size x < size (E x0 k)). omega.
+   contradict Hsize_gt. omega.
 Qed.
+Hint Resolve ingred_ge_size_eq.
+
+(** If each messages is an ingredient of each other,
+then they are equal *)
+Lemma ingred_eq : forall (x y :msg), x <st y -> y <st x -> x = y.
+Proof.
+intros x y Hxy Hyx.
+apply ingred_ge_size_eq. 
+auto.
+apply ingred_lt; auto.
+Qed.
+Hint Resolve ingred_eq.
+
+Lemma atomic_ingred_eq : 
+   forall x a, atomic a -> ingred x a -> x=a.
+Proof.
+intros x a Hat Hin.
+inversion Hat; subst; inversion Hin; auto.
+Qed.
+Hint Resolve atomic_ingred_eq.
+
+(** * Component *)
+(** Intuitively, a message x is a component of a message m 
+if we can get x just by seperation out all the pairs in m, 
+without using decryption *)
+
+(** ** Component of a message *)
+(** A message t0 is an e-ingredients of message t
+if t is in the smallest set containing t0 and closed 
+under concatenation with arbitrary term t1, i.e,
+if t0 is an atomic value of t *)
+Inductive e_ingred : relation msg := 
+  | e_ingred_refl : forall (t0:msg), e_ingred t0 t0
+  | e_ingred_pair_l : forall t0 t1 t2, 
+      e_ingred t0 t1 -> e_ingred t0 (P t1 t2)
+  | e_ingred_pair_r : forall t0 t1 t2,
+     e_ingred t0 t2 -> e_ingred t0 (P t1 t2).
+Hint Constructors e_ingred.
+
+Inductive comp : relation msg :=
+  | comp_step : forall m1 m2, 
+                simple m1 -> e_ingred m1 m2 -> comp m1 m2.
+Notation "a <com b" := (comp a b) (at level 30) : ss_scope.
+Hint Constructors comp.
+
+(** ** Component implies ingredient *)
+Lemma e_ingred_imp_ingred : forall m1 m2, e_ingred m1 m2 -> ingred m1 m2.
+Proof.
+intros m1 m2 Hein.
+induction Hein; subst.
+  apply ingred_refl.
+  apply ingred_pair_l; assumption.
+  apply ingred_pair_r; assumption.
+Qed.
+
+Lemma comp_imp_ingred : forall (m1 m2:msg), m1 <com m2 -> m1 <st m2.
+Proof.
+intros m1 m2 Hcom.
+apply e_ingred_imp_ingred.
+inversion Hcom; subst; assumption.
+Qed.
+
+(** ** Concatenation or pairing preserves components *)
+(** If a message x is a component an other message m1,
+it also is a component of every message which is concatenated from
+m1 and an abitrary message m2 *)
+Lemma preserve_comp_l : forall x m1 m2, comp x m1 -> comp x (P m1 m2).
+Proof. 
+intros x m1 m2 Hcom.
+inversion Hcom; subst.
+apply comp_step.
+ auto.
+ apply e_ingred_pair_l; assumption.
+Qed.
+
+Lemma preserve_comp_r : forall x m1 m2, comp x m2 -> comp x (P m1 m2).
+Proof. 
+intros x m1 m2 Hcom.
+inversion Hcom; subst.
+apply comp_step.
+ auto.
+ apply e_ingred_pair_r; assumption.
+Qed.
+
+(** ** An atomic message is a component of itself *)
+Lemma comp_atomic_cyclic : forall a, atomic a -> comp a a.
+Proof.
+intros a Hatom.
+constructor. 
+  apply atomic_imp_simple; assumption.
+  apply e_ingred_refl.
+Qed.
+
+(** ** A simple message is a component of itself *)
+Lemma comp_simple_cyclic : forall a, simple a -> comp a a. 
+Proof.
+intros a Hsim.
+constructor; [assumption |constructor].
+Qed. 
+  
+  
