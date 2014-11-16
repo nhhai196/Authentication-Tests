@@ -169,15 +169,6 @@ Axiom ssucc_not_ref: forall (n:node),  ssucc n n -> False.
 Axiom ssucc_partial_fun: 
   forall (n n1 n2: node),  ssucc n n1 /\ ssucc n n2  -> n1 = n2.
 
-(** Freeness for pairing and encryption *)
-Axiom pair_freeness : 
-  forall m1 m2 m1' m2', P m1 m2 = P m1' m2' ->
-                        m1 = m1' /\ m2 = m2'.
-
-Axiom enc_freeness : 
-  forall h1 h2 k1 k2, E h1 k1 = E h2 k2 -> h1 = h2 /\ k1 = k2.
-
-
 (** ** Message-delivery relation *)
 (*  ---------------------------  *)
 
@@ -195,7 +186,6 @@ Axiom was_sent : forall x : node, (recv x) ->
 (* Better would be to just postulate well_founded for (ssucc \/ msg-deliver)
 *)
 Axiom wf_prec: well_founded prec.
-
 
 (** * Theorems *)
 (*  ********** *)
@@ -617,30 +607,30 @@ Axiom path_begin_pos_end_neg : forall (p : list node),
   is_path p -> xmit(nth_node 0 p) /\ recv(nth_node (length p - 1)  p).
 
 (** * Transformation path *)
+Section Trans_path.
 Variable default_msg : msg.
+Variable p : list (prod node msg).
+Definition ln := fst (split p).
+Definition lm := snd (split p).
+
+
 Definition nth_msg : nat -> list msg -> msg :=
   fun (n:nat) (p:list msg) => nth n p default_msg.
 Hint Resolve nth_msg.
 
-Definition is_trans_path : list (prod node msg)->Prop := 
-  fun (p:list (prod node msg)) => 
-    let ln := fst (split p) in 
-    let lm  := snd (split p) in
-      (is_path ln \/ (ssucc (nth_node 0 ln) (nth_node 1 ln) /\ 
-                     xmit (nth_node 0 ln) /\ 
-                     xmit (nth_node 1 ln) /\
-                     is_path (tl ln))) /\
-      forall (n:nat),   
-      (n < length p -> (nth_msg n lm) <[node] (nth_node n ln)) /\
-      (n < length p - 1 ->
-        let L1 := nth_msg n lm in 
-        let L2 := nth_msg (n+1) lm in 
-        let n1 := nth_node n ln in 
-        let n2 := nth_node (n+1) ln in
-          (L1 = L2 \/ (ssuccs n1 n2 /\ new_at L2 n2))).
+Definition L (n:nat) := nth_msg n lm.
+Definition nd (n:nat) := nth_node n ln.
+
+Definition is_trans_path : Prop := 
+  (is_path ln \/ 
+     (ssucc (nd 0) (nd 1) /\  xmit (nd 0) /\ xmit (nd 1) /\ is_path (tl ln))) /\
+   forall (n:nat), (n < length p -> (L n) <[node] (nd n)) /\
+     (n < length p - 1 -> (L n = L (n+1) \/ 
+                       (exists m, xmit m /\ new_at (L (n+1)) m  /\ 
+                          ssuccs (nd n) m /\ ssuccseq m (nd (n+1))))).
 Print is_trans_path.
 
-(* Baby result : a single pair (n, L) is a trans-foramtion path *)
+(* Baby result : a single pair (n, L) is a trans-foramtion path 
 Lemma anode_trans_path : 
   forall (n:node) (t:msg), 
   comp_of_node t n -> is_trans_path (cons (n,t) nil).
@@ -653,7 +643,7 @@ simpl. split.
    intros n1; split.
      intro Hn1_lt. assert (n1=0). omega. subst. apply Hcom.
      intros Hn1_lt. apply False_ind. omega.
-Qed.      
+Qed.*)      
 
 (** * Proposition 11 *)
 (** For every atomic ingredient of a message, there exists 
@@ -713,23 +703,57 @@ intros.
 apply ingred_exists_comp; assumption.
 Qed.
 
-Lemma ingred_of_earlier : 
-  forall (n:node) (a:msg), 
-   (~ orig_at n a) /\ xmit n /\ ingred a (msg_of n) -> 
-   exists n', ssuccs n' n /\ ingred a (msg_of n').
+Section Proposition11.
+Variable a : msg.
+Variable n : node.
+Definition P_ingred : node -> Prop:=
+  fun (n':node) => ssuccs n' n /\ ingred a (msg_of n').
+
+(* Since ssuccs implies prec, if a element x is prec-accessible
+then it is ssuccs-accessible *)
+Lemma acc_prec_ssuccs : forall x, Acc prec x -> Acc ssuccs x.
 Proof.
-intros.
+intros x Hprec.
+induction Hprec. constructor.
+intros. apply H0.
+apply ssuccs_prec; auto.
+Qed.
+
+(* Ssuccs is a well-founded relation *)
+(* Notice that every sub-relation of a well-founded relation is 
+also well-founded *)
+Lemma wf_ssuccs : well_founded ssuccs.
+Proof.
+unfold well_founded. intros x.
+apply acc_prec_ssuccs.
+apply wf_prec.
+Qed.
+
+Lemma ingred_of_earlier : 
+  forall (n':node), 
+   a <st (msg_of n) -> xmit n -> ~ orig_at n a -> exists n', P_ingred n'.
+Proof.
+intros n' Hst Hxmit Hnorig.
 apply Peirce.
 intros.
 apply False_ind.
-unfold not in H.
-destruct H as (H1, (H2, H3)).
-apply H1. unfold orig_at.
-split. auto. split. auto.
-intros. apply H0.
-exists n'.
-split; auto.
+apply Hnorig. unfold orig_at.
+repeat split.
+  auto. 
+  auto.
+  intros n1 Hssuc Hastn1. apply H.
+  exists n1. split; auto.
 Qed.
+
+Lemma not_orig_exists : 
+  a <st (msg_of n) -> xmit n -> ~ orig_at n a -> has_min_elt P_ingred.
+Proof.
+intros Hxmit Hst Hnorig.
+apply always_min_elt.
+apply ingred_of_earlier; assumption.
+Qed.
+
+End Proposition11. 
 
 (** Backward construction *)
 Lemma backward_construction : 
@@ -746,7 +770,7 @@ case Hx_r.
     assert (Hex : exists (n':node), msg_deliver n' n). 
     apply was_sent. auto.
     destruct Hex as (n', Hmsg_deli).
-    exists n'; exists L.
+    exists n'; exists L. 
       split. left; auto.
       split. exact Hst.
       split. apply msg_deliver_comp with (n1:=n') (n2:=n).
@@ -759,9 +783,11 @@ case Hx_r.
     intros Hnew. 
     assert (Hex2 :exists n1, ssuccs n1 n /\ ingred a (msg_of n1)).
     apply ingred_of_earlier. repeat split; auto.
-    apply ingred_trans with (y:=L). 
+    apply ingred_trans with (y:=L).
       assumption.
       apply comp_of_node_imp_ingred; assumption.
+      assumption.
+      assumption.
     destruct Hex2 as (n1, (Hssucc, Hastn1)).
     assert (HexL1 : exists L1, ingred a L1 /\ comp_of_node L1 n1).
       apply ingred_exists_comp_of_node; assumption.
