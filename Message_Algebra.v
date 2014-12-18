@@ -1,6 +1,6 @@
 
 Require Import Relation_Definitions Relation_Operators 
-               Omega Arith ListSet.
+               Omega Arith ListSet FSetInterface.
 
 (* ******************************************************* *)
 (* VERSION 4 *)
@@ -63,6 +63,7 @@ Hint Resolve eq_text_dec.
 *)
 
 Variable Key : Set.
+Parameter K_p : set Key.
 
 (** ** Inverse relation *)
 Variable inv : relation Key.
@@ -392,4 +393,31 @@ intros a Hsim.
 constructor; [assumption |constructor].
 Qed. 
   
-  
+(** * K-ingredients *)
+Section K_relation.
+(** A message t0 is an k-ingredients of message t
+if t is in the smallest set containing t0 and closed 
+under encryption and concatenation with arbitrary term t1, i.e,
+if t0 is an atomic value of t *)
+Variable K_t : set Key.
+Inductive k_ingred : relation msg := 
+  | k_ingred_refl : forall (t0:msg), k_ingred t0 t0
+  | k_ingred_pair_l : forall t0 t1 t2, 
+      k_ingred t0 t1 -> k_ingred t0 (P t1 t2)
+  | k_ingred_pair_r : forall t0 t1 t2,
+     k_ingred t0 t2 -> k_ingred t0 (P t1 t2)
+  | k_ingred_enc : forall t0 t1 k,
+      k_ingred t0 t1 -> forall e, (set_In e K_t -> set_In e K_p) -> 
+      set_In k K_t -> k_ingred t0 (E t1 k).
+Hint Constructors k_ingred.
+End K_relation.
+
+(** * Penetrable keys *)
+Definition P_0 := K_p.
+Check set_union.
+Check set Key.
+Print union.
+Print set_union. 
+Definition a := set_union K_p P_0.
+
+   
