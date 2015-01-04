@@ -30,16 +30,17 @@ Require Import Omega.
 (*  *************************************** *)
 
 Variable node : Set. 
-Variable strand : Set.
+(* Variable strand : Set. *)
+Definition strand : Type := list smsg.
 Variable role : Set.
 Variable xmit : node -> Prop.
 Variable recv : node -> Prop.
 Variable msg_of : node -> msg.  
 Variable msg_deliver : node -> node -> Prop.
 Variable ssucc : node ->  node -> Prop.
-Variable regular_strand : set strand.
-Variable penetrable_strand : set strand.
-Variable strand_of: node -> strand. 
+(* Variable regular_strand : set strand. *)
+(* Variable penetrable_strand : set strand.*)
+(* Variable strand_of: node -> strand. *)
 
 (* not needed here...do it in protocol specs *)
 (* Variable role_of: strand -> role.   (** maybe should be a relation *) *)
@@ -146,9 +147,9 @@ Variable eq_msg_dec : forall x y : msg, {x = y} + {x <> y}.
 Hint Resolve eq_msg_dec.
 Variable eq_node_dec : forall x y : node, {x = y} + {x <> y}.
 Hint Resolve eq_node_dec.
-Variable eq_strand_dec : forall x y : strand, {x = y} + {x <> y}.
+(* Variable eq_strand_dec : forall x y : strand, {x = y} + {x <> y}.
 Hint Resolve eq_strand_dec.
-
+*)
 
 
 (** * Axioms *)
@@ -501,6 +502,25 @@ Qed.
 
 End IngredientsOriginate.
 
+(*********************************************************************)
+
+(** * Penetrator Strands *)
+Parameter K_p : set Key. 
+Open Scope list_scope.
+Import ListNotations.
+Open Scope ma_scope.
+Inductive
+ ps (s : strand) : Prop :=
+  | P_M : forall t : Text, s = [+ (T t)] -> ps s
+  | P_K : forall k : Key, set_In k K_p -> s = [+ (K k)] -> ps s
+  | P_C : forall (g h : msg), s = [- g; - h; + (P g h)] -> ps s
+  | P_S : forall (g h : msg), s = [- (P g h); + g ; + h] -> ps s
+  | P_E : forall (k : Key) (h :msg), s = [- (K k); - h; + (E h k)] -> ps s
+  | P_D : forall (k k' : Key) (h :msg), 
+          inv k k' -> s = [- ( K k'); - (E h k); + h] -> ps s.
+
+(*********************************************************************)
+
 (** * New Component *)
 (** ** Component of a node *)
 (** A message is a component of a node if it is a component 
@@ -564,7 +584,10 @@ unfold new_at. split.
       split; auto.
 Qed.
 
-(** * Path *)
+(*********************************************************************)
+
+(** * Paths *)
+Section Path.
 (** ** Path condition *)
 Inductive path_cond (m n : node) : Prop :=
   | path_cond_single :  msg_deliver m n -> path_cond m n
@@ -606,7 +629,14 @@ Definition is_path : list node -> Prop :=
 Axiom path_begin_pos_end_neg : forall (p : list node),
   is_path p -> xmit(nth_node 0 p) /\ recv(nth_node (length p - 1)  p).
 
-(** * Transformation path *)
+
+(*********************************************************************)
+
+(** * Edges *)
+(** ** Transformed edges *)
+(** ** Transforming edges *)
+
+(** * Transformation paths *)
 Section Trans_path.
 Variable default_msg : msg.
 Variable p : list (prod node msg).
@@ -629,6 +659,7 @@ Definition is_trans_path : Prop :=
                        (exists m, xmit m /\ new_at (L (n+1)) m  /\ 
                           ssuccs (nd n) m /\ ssuccseq m (nd (n+1))))).
 Print is_trans_path.
+End Trans_path.
 
 (* Baby result : a single pair (n, L) is a trans-foramtion path 
 Lemma anode_trans_path : 
@@ -809,7 +840,7 @@ case Hx_r.
     left; trivial.
 Qed.
 
-Definition Prop11 : node -> Prop := 
+(*Definition Prop11 : node -> Prop := 
   fun (n':node) => 
   forall (a t:msg), 
   atomic a -> a <st t /\ t <[node] n' -> 
@@ -884,4 +915,4 @@ case H3.
     intro Hnorig.
       exists (p0++(n',L')::nil).
 Admitted.
-
+*)

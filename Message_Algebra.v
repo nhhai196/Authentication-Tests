@@ -54,6 +54,8 @@ Variable Text : Set.
 Variable eq_text_dec : forall (x y:Text), {x = y} + {x <> y}.
 Hint Resolve eq_text_dec.
 
+(*********************************************************************)
+
 (** * Keys *)
 
 (** Interesting design choices about keys. Here we do not model
@@ -62,15 +64,19 @@ Hint Resolve eq_text_dec.
    Sometimes simpler.  Possible issue is with key inverses...?
 *)
 
+(** ** Definition *)
 Variable Key : Set.
+
 Parameter K_p : set Key.
 
-(** ** Inverse relation *)
+(** ** Inverse relation for keys *)
 Variable inv : relation Key.
 
-(** ** Decidable equality for key *)
+(** ** Decidable equality for keys *)
 Variable eq_key_dec : forall (x y:Key), {x=y} + {x<>y}.
 Hint Resolve eq_key_dec.
+
+(*********************************************************************)
 
 (** * Messages *)
 (** ** Inductive  definition for messages *)
@@ -89,6 +95,22 @@ intros.
 decide equality.
 Qed.
 Hint Resolve eq_msg_dec.
+
+(** ** Sign messages *)
+Inductive smsg := 
+  | xmit_msg : msg -> smsg 
+  | recv_msg : msg -> smsg.
+
+Notation "+ m" := (xmit_msg m) (at level 30) : ma_scope.
+Notation "- m" := (recv_msg m) : ma_scope.
+
+
+(* Convert sign messages to messages *)
+Definition smsg_2_msg (m : smsg) : msg :=
+   match m with
+   | (xmit_msg x) => x
+   | (recv_msg  x) => x
+   end.
 
 (** ** Atomic messages *)
 Inductive atomic : msg -> Prop := 
@@ -157,10 +179,12 @@ apply simple_step.
 apply atom_not_pair; assumption.
 Qed.
 
+(*********************************************************************)
+
 (** * Freeness assumptions about pair and encryption *)
 (* Both of them are provable in this context *)
 
-(** ** pair freeness *)
+(** ** For pair *)
 (** If two concatenated (or encrypted) messages are equal then each
 component of the first is equal the corresponding componet of the second *)
 Lemma pair_free : forall m1 m2 m1' m2', 
@@ -170,7 +194,7 @@ intros m1 m2 m1' m2' HPeq.
 injection HPeq. auto.
 Qed.
 
-(** ** Encryption freeness *)
+(** ** For Encryption *)
 Lemma enc_free : forall m k m' k',
                  E m k = E m' k' -> m = m' /\ k = k'.
 Proof.
@@ -179,7 +203,8 @@ injection HEeq.
 auto.
 Qed.
 
-(** * Ingredient.   Called "carried by" in some CPSA pubs. *) 
+(** * Ingredient.   Called "carried by" in some CPSA pubs. *)
+(** ** Definition *)
 Inductive ingred : msg -> msg -> Prop :=
 | ingred_refl : forall m, ingred m m
 | ingred_pair_l : forall m l r, 
@@ -193,7 +218,8 @@ Notation "a <st b" := (ingred a b) (at level 30) : ss_scope.
 
 Open Scope ss_scope.
 
-(** ** Ingred is transitive *)
+(** ** Properties *)
+(** *** Transitive *)
 Lemma ingred_trans : 
   forall x y z,  x <st y -> y <st z -> x <st z.
 Proof.
@@ -206,7 +232,7 @@ induction Syz.
 Qed.
 Hint Resolve ingred_trans.
 
-(** ** Some other basic results about ingredients *)
+(** *** Some other basic results about ingredients *)
 Lemma ingred_pair : forall (x y z:msg), x <> (P y z) ->
                                   x <st (P y z) -> 
                                   x <st y \/ x <st z.
@@ -229,6 +255,8 @@ inversion Hst; subst.
   auto.
 Qed.
 Hint Resolve ingred_enc.
+
+(*********************************************************************)
 
 (** * Size of messages *)
 (** ** Definition *)
@@ -257,7 +285,7 @@ rewrite (plus_comm (size x) 0) in H.
 rewrite (plus_O_n (size x)) in H. auto. 
 Qed.
 
-(** ** Realtionship between ingred and size *)
+(** ** Realtionship between ingredient and size *)
 
 (** Size of an ingredient x is always less than or equal
  size of message y if x is an ingredient of y. *)
@@ -295,7 +323,7 @@ inversion Hst; subst.
 Qed.
 Hint Resolve ingred_ge_size_eq.
 
-(** If each messages is an ingredient of each other,
+(** If each message is an ingredient of each other,
 then they are equal *)
 Lemma ingred_eq : forall (x y :msg), x <st y -> y <st x -> x = y.
 Proof.
@@ -313,6 +341,8 @@ intros x a Hat Hin.
 inversion Hat; subst; inversion Hin; auto.
 Qed.
 Hint Resolve atomic_ingred_eq.
+
+(*********************************************************************)
 
 (** * Component *)
 (** Intuitively, a message x is a component of a message m 
@@ -392,6 +422,8 @@ Proof.
 intros a Hsim.
 constructor; [assumption |constructor].
 Qed. 
+
+(*********************************************************************)
   
 (** * K-ingredients *)
 Section K_relation.
@@ -418,6 +450,6 @@ Check set_union.
 Check set Key.
 Print union.
 Print set_union. 
-Definition a := set_union K_p P_0.
+
 
    
