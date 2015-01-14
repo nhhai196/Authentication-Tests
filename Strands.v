@@ -38,9 +38,11 @@ Variable recv : node -> Prop.
 Variable msg_of : node -> msg.  
 Variable msg_deliver : node -> node -> Prop.
 Variable ssucc : node ->  node -> Prop.
+Definition path : Type := list (prod node msg).
 (* Variable regular_strand : set strand. *)
 (* Variable penetrable_strand : set strand.*)
-(* Variable strand_of: node -> strand. *)
+Variable strand_of: node -> strand.
+Variable p_node : node -> Prop.
 
 (* not needed here...do it in protocol specs *)
 (* Variable role_of: strand -> role.   (** maybe should be a relation *) *)
@@ -509,16 +511,56 @@ Parameter K_p : set Key.
 Open Scope list_scope.
 Import ListNotations.
 Open Scope ma_scope.
-Inductive
- ps (s : strand) : Prop :=
-  | P_M : forall t : Text, s = [+ (T t)] -> ps s
-  | P_K : forall k : Key, set_In k K_p -> s = [+ (K k)] -> ps s
-  | P_C : forall (g h : msg), s = [- g; - h; + (P g h)] -> ps s
-  | P_S : forall (g h : msg), s = [- (P g h); + g ; + h] -> ps s
-  | P_E : forall (k : Key) (h :msg), s = [- (K k); - h; + (E h k)] -> ps s
-  | P_D : forall (k k' : Key) (h :msg), 
-          inv k k' -> s = [- ( K k'); - (E h k); + h] -> ps s.
 
+Inductive MStrand (s : strand) : Prop := 
+  | P_M : forall t : Text, s = [+ (T t)] -> MStrand s.
+Hint Constructors MStrand.
+
+Inductive KStrand (s : strand) : Prop := 
+  | P_K : forall k : Key, set_In k K_p -> s = [+ (K k)] -> KStrand s.
+Hint Constructors KStrand.
+
+Inductive CStrand (s : strand) : Prop := 
+  | P_C : forall (g h : msg), s = [- g; - h; + (P g h)] -> CStrand s.
+Hint Constructors CStrand.
+
+Inductive SStrand (s : strand) : Prop := 
+  | P_S : forall (g h : msg), s = [- (P g h); + g ; + h] -> SStrand s.
+Hint Constructors SStrand.
+
+Inductive EStrand (s : strand) : Prop := 
+  | P_E : forall (k : Key) (h :msg), s = [- (K k); - h; + (E h k)] -> EStrand s.
+Hint Constructors EStrand.
+
+Inductive DStrand (s : strand) : Prop := 
+  | P_D : forall (k k' : Key) (h :msg), 
+          inv k k' -> s = [- ( K k'); - (E h k); + h] -> DStrand s.
+Hint Constructors DStrand.
+
+Definition PenetratorStrand (s : strand) : Prop := 
+  MStrand s \/ KStrand s \/ CStrand s \/ SStrand s \/ EStrand s \/ DStrand s.
+
+(* Inductive PenetratorStrand (s : strand) : Prop :=
+  | P_M : forall t : Text, s = [+ (T t)] -> PenetratorStrand s
+  | P_K : forall k : Key, set_In k K_p -> s = [+ (K k)] -> PenetratorStrand s
+  | P_C : forall (g h : msg), s = [- g; - h; + (P g h)] -> PenetratorStrand s
+  | P_S : forall (g h : msg), s = [- (P g h); + g ; + h] -> PenetratorStrand s
+  | P_E : forall (k : Key) (h :msg), s = [- (K k); - h; + (E h k)] -> PenetratorStrand s
+  | P_D : forall (k k' : Key) (h :msg), 
+          inv k k' -> s = [- ( K k'); - (E h k); + h] -> PenetratorStrand s.
+Hint Constructors PenetratorStrand.
+*)
+
+(** ** Axiom about penetrator strands and penetrator nodes *)
+Axiom P_node_strand : 
+  forall (n:node), p_node n -> PenetratorStrand (strand_of n).
+
+
+(** Axiom for strand_of *)
+(* TODO : move to right place *)
+Axiom ssuccs_same_strand :
+  forall (n1 n2 : node), ssuccs n1 n2 -> strand_of n1 = strand_of n2.
+                   
 (*********************************************************************)
 
 (** * New Component *)
@@ -584,6 +626,28 @@ unfold new_at. split.
       split; auto.
 Qed.
 
+(** ** Basic results about penetrator strands related to components *)
+(* A MStrand or KStrand cannot have an edge *)
+Axiom MStrand_not_edge :
+  forall (s:strand), MStrand s -> ~ exists (n1 n2 : node),
+                     strand_of n1 = s /\ strand_of n2 = s /\ ssuccs n1 n2.
+ 
+Axiom KStrand_not_edge :
+  forall (s:strand), KStrand s -> ~ exists (n1 n2 : node),
+                     strand_of n1 = s /\ strand_of n2 = s /\ ssuccs n1 n2.  
+
+Axiom CStrand_not : 
+  forall (s:strand), CStrand s -> ~ exists (n1 n2 : node), 
+                     strand_of n1 = s /\ strand_of n2 = s /\
+                     recv n1 /\ xmit n2 /\ ssuccs n1 n2 /\
+                     exists L1 L2, L1 <[node] n1 /\ L2 <[node] n2 /\ L1 <> L2.
+
+Axiom SStrand_not : 
+  forall (s:strand), SStrand s -> ~ exists (n1 n2 : node), 
+                     strand_of n1 = s /\ strand_of n2 = s /\
+                     recv n1 /\ xmit n2 /\ ssuccs n1 n2 /\
+                     exists L1 L2, L1 <[node] n1 /\ L2 <[node] n2 /\ L1 <> L2.
+
 (*********************************************************************)
 
 (** * Paths *)
@@ -636,10 +700,15 @@ Axiom path_begin_pos_end_neg : forall (p : list node),
 (** ** Transformed edges *)
 (** ** Transforming edges *)
 
+(*********************************************************************)
+
+(* I want to define some constant of type msg here but we don't know any constant 
+of this type, so I just say it is some variable *)
+Variable default_msg : msg.
+
 (** * Transformation paths *)
 Section Trans_path.
-Variable default_msg : msg.
-Variable p : list (prod node msg).
+Variable p : path.
 Definition ln := fst (split p).
 Definition lm := snd (split p).
 
@@ -652,14 +721,16 @@ Definition L (n:nat) := nth_msg n lm.
 Definition nd (n:nat) := nth_node n ln.
 
 Definition is_trans_path : Prop := 
-  (is_path ln \/ 
-     (ssucc (nd 0) (nd 1) /\  xmit (nd 0) /\ xmit (nd 1) /\ is_path (tl ln))) /\
+  (is_path ln /\
+   (True \/ 
+   (ssuccs (nd 0) (nd 1) /\  xmit (nd 0) /\ xmit (nd 1)))) /\
    forall (n:nat), (n < length p -> (L n) <[node] (nd n)) /\
-     (n < length p - 1 -> (L n = L (n+1) \/ 
-                       (exists m, xmit m /\ new_at (L (n+1)) m  /\ 
-                          ssuccs (nd n) m /\ ssuccseq m (nd (n+1))))).
-Print is_trans_path.
+     (n < length p - 1 -> (L n = L (n+1) \/ (L n <> L (n+1) -> 
+                          recv (nd n) /\ xmit (nd (n+1)) /\ ssuccs (nd n) (nd (n+1)) /\
+                          (exists m, xmit m /\ new_at (L (n+1)) m  /\ 
+                           ssuccs (nd n) m /\ ssuccseq m (nd (n+1)))))).
 End Trans_path.
+Print is_trans_path.
 
 (* Baby result : a single pair (n, L) is a trans-foramtion path 
 Lemma anode_trans_path : 
@@ -676,6 +747,119 @@ simpl. split.
      intros Hn1_lt. apply False_ind. omega.
 Qed.*)      
 
+(*********************************************************************)
+(** * Proposition 10 *)
+Section Propositon_10.
+Variable p : path.
+
+(* TODO : move to right place *)
+Lemma ssuccs_trans' : 
+  forall x y z, ssuccs x y -> ssuccs y z -> ssuccs x z.
+Proof.
+intros x y z Hxy. induction Hxy.
+  intros. apply ssuccs_trans with (y':= z0).
+    auto. auto.
+    intros. apply ssuccs_trans with (y':= y').
+      auto.
+      apply IHHxy. auto.
+Qed.
+
+Lemma ssuccs_eq : 
+  forall x y z, ssuccs x y -> ssuccseq y z -> ssuccs x z.
+Proof.
+intros x y z Hxy Hyz.
+inversion Hyz. 
+  rewrite H in Hxy. auto.
+  apply ssuccs_trans' with (y:=y); auto.
+Qed.
+ 
+Lemma trans_path_ssuccs : 
+  is_trans_path p -> forall (n:nat), 
+     n < length p - 1 -> L p n <> L p (n+1) ->
+     ssuccs (nd p n) (nd p (n+1)) /\ recv (nd p n) /\ xmit (nd p (n+1)). 
+Proof.
+intros.
+unfold is_trans_path in H.
+destruct H as ((H3,H4),H5).
+remember (H5 n) as H6.
+destruct H6 as (H61, H62).
+remember (H62 H0) as H7.
+case H7.
+  intros. apply False_ind. apply H1. auto.
+  intros. remember (H H1) as H8.
+  destruct H8 as (Hrec, (Hxmit, (Hss, (m, (H9, (H10, (H11, H12))))))).
+repeat split.
+apply ssuccs_eq with (y:= m); auto.
+auto.
+auto.
+Qed.
+
+
+Lemma Proposition_10 : 
+  is_trans_path p -> 
+  forall (n:nat), n < length p - 1 -> L p n <> L p (n+1) ->
+  p_node (nd p n) -> 
+  ssuccs (nd p n) (nd p (n+1)) /\ 
+  (DStrand (strand_of (nd p n)) \/ 
+   EStrand (strand_of (nd p n))).
+Proof.
+intros. 
+assert (Hs : ssuccs (nd p n) (nd p (n + 1)) /\ recv (nd p n) /\ xmit (nd p (n+1))).
+apply trans_path_ssuccs; auto.
+unfold is_trans_path in H.
+destruct H as (Ha, Hb).
+split.
+  apply Hs.
+  
+  assert (Hp : PenetratorStrand (strand_of (nd p n))).
+  apply (P_node_strand (nd p n)); auto.
+  unfold PenetratorStrand in Hp.
+  destruct Hp as [Hp1 | [Hp2 | [Hp3 | [Hp4 | [Hp5 |Hp6 ]]]]].
+  apply False_ind. apply (MStrand_not_edge (strand_of (nd p n))).
+    auto.
+    exists (nd p n).
+    exists (nd p (n+1)).
+    split. auto.
+    split. symmetry. apply ssuccs_same_strand. apply Hs.
+    apply Hs.
+
+  apply False_ind. apply (KStrand_not_edge (strand_of (nd p n))).
+    auto.
+    exists (nd p n).
+    exists (nd p (n+1)).
+    split. auto.
+    split. symmetry. apply ssuccs_same_strand; apply Hs.
+    apply Hs.
+
+  apply False_ind. apply (CStrand_not (strand_of (nd p n))).
+    auto.
+    exists (nd p n).
+    exists (nd p (n+1)).
+    split. auto.
+    split. symmetry. apply ssuccs_same_strand. apply Hs.
+    repeat split. apply Hs. apply Hs. apply Hs.
+    exists (L p n). exists (L p (n+1)).
+    split. apply Hb. omega.
+    split. apply Hb with (n:= n+1). omega.
+    auto.
+
+  apply False_ind. apply (SStrand_not (strand_of (nd p n))).
+    auto.
+    exists (nd p n).
+    exists (nd p (n+1)).
+    split. auto.
+    split. symmetry. apply ssuccs_same_strand. apply Hs.
+    repeat split. apply Hs. apply Hs. apply Hs.
+    exists (L p n). exists (L p (n+1)).
+    split. apply Hb. omega.
+    split. apply Hb with (n:= n+1). omega.
+    auto.
+
+  auto.
+  auto.
+Qed.
+
+  
 (** * Proposition 11 *)
 (** For every atomic ingredient of a message, there exists 
 a component of the message such that the atomic value is 
