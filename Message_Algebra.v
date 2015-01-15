@@ -80,7 +80,7 @@ Hint Resolve eq_key_dec.
 
 (** * Messages *)
 (** ** Inductive  definition for messages *)
-Inductive msg :=
+Inductive msg : Set :=
   | T : Text -> msg
   | K : Key -> msg
   | P : msg -> msg -> msg
@@ -431,25 +431,22 @@ Section K_relation.
 if t is in the smallest set containing t0 and closed 
 under encryption and concatenation with arbitrary term t1, i.e,
 if t0 is an atomic value of t *)
-Variable K_t : set Key.
+Variable F : Set.
+Variable inj_F_K : F -> Key.
+Axiom inj_F_K_inj : forall x y : F, inj_F_K x = inj_F_K y -> x = y.
+Coercion inj_F_K : F >-> Key.
 Inductive k_ingred : relation msg := 
   | k_ingred_refl : forall (t0:msg), k_ingred t0 t0
-  | k_ingred_pair_l : forall t0 t1 t2, 
+  | k_ingred_pair_l : forall (t0 t1 t2 : msg), 
       k_ingred t0 t1 -> k_ingred t0 (P t1 t2)
-  | k_ingred_pair_r : forall t0 t1 t2,
+  | k_ingred_pair_r : forall (t0 t1 t2 : msg),
      k_ingred t0 t2 -> k_ingred t0 (P t1 t2)
-  | k_ingred_enc : forall t0 t1 k,
-      k_ingred t0 t1 -> forall e, (set_In e K_t -> set_In e K_p) -> 
-      set_In k K_t -> k_ingred t0 (E t1 k).
+  | k_ingred_enc : forall (t0 t1 : msg) (k : F),
+     k_ingred t0 t1 -> k_ingred t0 (E t1 k).
 Hint Constructors k_ingred.
 End K_relation.
-
-(** * Penetrable keys *)
-Definition P_0 := K_p.
-Check set_union.
-Check set Key.
-Print union.
-Print set_union. 
-
-
-   
+Check k_ingred.
+Variable A : Set.
+Variable B : A -> Key.
+Variable m1 m2 : msg.
+Check (k_ingred A B m1 m2).

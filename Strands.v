@@ -650,15 +650,33 @@ Axiom SStrand_not :
 
 (*********************************************************************)
 
+(** * Penetrable Keys and Safe Keys *)
+(* Penetrable key is already penetrated (K_p) or some regular strand
+puts it in a form that could allow it to be penetrated, because for each key
+protecting it, the matching key decryption key is already pentrable *)
+Variable r_node : node -> Prop.
+Variable Kp : Set.
+Check k_ingred.
+
+(*Inductive PKeys : Key -> Prop := 
+  | init_pen : forall (k : Key), PKeys k
+  | next_pen : forall (k:Key), (exists (n:node) (t:msg), 
+       r_node n -> xmit n -> (new_at t n /\ k_ingred PK PT k t)) -> PKeys k
+with
+  PK : Set := sig PKeys
+  PT : PK -> Key.
+*)
+(*********************************************************************)
+
 (** * Paths *)
 Section Path.
 (** ** Path condition *)
 Inductive path_cond (m n : node) : Prop :=
   | path_cond_single :  msg_deliver m n -> path_cond m n
   | path_cond_double : ssuccs m n /\ 
-                            recv(m) /\ 
-                            xmit(n) -> 
-                            path_cond m n.
+                       recv(m) /\ 
+                       xmit(n) -> 
+                       path_cond m n.
 Hint Constructors path_cond.
 Notation "m |--> n" := (path_cond m n) (at level 30) : ss_scope.
 
@@ -710,15 +728,18 @@ Variable default_msg : msg.
 Section Trans_path.
 Variable p : path.
 Definition ln := fst (split p).
+Hint Resolve ln.
 Definition lm := snd (split p).
-
+Hint Resolve lm.
 
 Definition nth_msg : nat -> list msg -> msg :=
   fun (n:nat) (p:list msg) => nth n p default_msg.
 Hint Resolve nth_msg.
 
 Definition L (n:nat) := nth_msg n lm.
+Hint Resolve L.
 Definition nd (n:nat) := nth_node n ln.
+Hint Resolve nd.
 
 Definition is_trans_path : Prop := 
   (is_path ln /\
@@ -729,27 +750,29 @@ Definition is_trans_path : Prop :=
                           recv (nd n) /\ xmit (nd (n+1)) /\ ssuccs (nd n) (nd (n+1)) /\
                           (exists m, xmit m /\ new_at (L (n+1)) m  /\ 
                            ssuccs (nd n) m /\ ssuccseq m (nd (n+1)))))).
-End Trans_path.
-Print is_trans_path.
 
-(* Baby result : a single pair (n, L) is a trans-foramtion path 
+End Trans_path.
+
+(* Baby result : a single pair (n, L) is a trans-foramtion path *)
 Lemma anode_trans_path : 
   forall (n:node) (t:msg), 
-  comp_of_node t n -> is_trans_path (cons (n,t) nil).
+    t <[node] n -> is_trans_path [(n,t)].
 Proof.
 intros n t Hcom.
 unfold is_trans_path.
 simpl. split.
-  left. constructor. simpl in H.
+  split. constructor. simpl in H.
     apply False_ind; omega.
-   intros n1; split.
+  left; auto.
+  intros n1; split.
      intro Hn1_lt. assert (n1=0). omega. subst. apply Hcom.
      intros Hn1_lt. apply False_ind. omega.
-Qed.*)      
+Qed.      
 
 (*********************************************************************)
+
 (** * Proposition 10 *)
-Section Propositon_10.
+Section Proposition_10.
 Variable p : path.
 
 (* TODO : move to right place *)
@@ -859,10 +882,13 @@ split.
   auto.
 Qed.
 
+End Proposition_10.
+
+(*********************************************************************)
   
 (** * Proposition 11 *)
 (** For every atomic ingredient of a message, there exists 
-a component of the message such that the atomic value is 
+a component of the message so that the atomic value is 
 an ingredient of that component *)
 Lemma ingred_exists_comp: 
   forall m a, atomic a -> a <st m -> exists L, a <st L /\ comp L m.
@@ -908,7 +934,6 @@ assert (Hex : exists L : msg, a <st L /\ L <com m).
       apply simple_step. unfold not. intros Hpair.
         inversion Hpair.
 Qed.
-
 
 Lemma ingred_exists_comp_of_node: 
   forall (n:node) (a:msg), atomic a -> a <st (msg_of n) 
@@ -1024,7 +1049,7 @@ case Hx_r.
     left; trivial.
 Qed.
 
-(*Definition Prop11 : node -> Prop := 
+Definition Proposition_11_aux : node -> Prop := 
   fun (n':node) => 
   forall (a t:msg), 
   atomic a -> a <st t /\ t <[node] n' -> 
@@ -1038,13 +1063,13 @@ Qed.
               
 (* The main result *)
 Lemma proposition11 : 
-  forall (n':node), Prop11 n'.
+  forall (n':node), Proposition_11_aux n'.
 Proof.
 apply well_founded_ind with (R:=prec).
 exact wf_prec.
 intros.
-unfold Prop11.
-unfold Prop11 in H.
+unfold Proposition_11_aux.
+unfold Proposition_11_aux in H.
 intros.
 destruct H1 as (H1, H2).
 assert (orig_at x a \/ ~ orig_at x a). tauto.
@@ -1099,4 +1124,4 @@ case H3.
     intro Hnorig.
       exists (p0++(n',L')::nil).
 Admitted.
-*)
+
