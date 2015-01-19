@@ -432,7 +432,7 @@ if t is in the smallest set containing t0 and closed
 under encryption and concatenation with arbitrary term t1, i.e,
 if t0 is an atomic value of t *)
 Variable F : Set.
-Variable inj_F_K : F -> Key.
+Parameter inj_F_K : F -> Key.
 Axiom inj_F_K_inj : forall x y : F, inj_F_K x = inj_F_K y -> x = y.
 Coercion inj_F_K : F >-> Key.
 Inductive k_ingred : relation msg := 
@@ -449,4 +449,3 @@ Check k_ingred.
 Variable A : Set.
 Variable B : A -> Key.
 Variable m1 m2 : msg.
-Check (k_ingred A B m1 m2).

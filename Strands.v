@@ -33,6 +33,7 @@ Variable node : Set.
 (* Variable strand : Set. *)
 Definition strand : Type := list smsg.
 Variable role : Set.
+(* Predicate for positive and negative nodes *)
 Variable xmit : node -> Prop.
 Variable recv : node -> Prop.
 Variable msg_of : node -> msg.  
@@ -42,7 +43,9 @@ Definition path : Type := list (prod node msg).
 (* Variable regular_strand : set strand. *)
 (* Variable penetrable_strand : set strand.*)
 Variable strand_of: node -> strand.
+(* Predicates for regular nodes and penetrable nodes *)
 Variable p_node : node -> Prop.
+Variable r_node : node -> Prop.
 
 (* not needed here...do it in protocol specs *)
 (* Variable role_of: strand -> role.   (** maybe should be a relation *) *)
@@ -654,18 +657,20 @@ Axiom SStrand_not :
 (* Penetrable key is already penetrated (K_p) or some regular strand
 puts it in a form that could allow it to be penetrated, because for each key
 protecting it, the matching key decryption key is already pentrable *)
-Variable r_node : node -> Prop.
-Variable Kp : Set.
-Check k_ingred.
+Section Penetrable_Keys.
+Parameter Kp : Set.
+Parameter PK : nat -> Key -> Prop.
+Axiom init_pkeys : sig (PK 0) = Kp.
+Axiom next_pkeys : forall (i:nat) (k:Key), exists (n:node) (t:msg),
+                      r_node n -> xmit n -> new_at t n -> 
+                      k_ingred (sig (PK i)) (K k) t -> PK (i+1) k.  
 
-(*Inductive PKeys : Key -> Prop := 
-  | init_pen : forall (k : Key), PKeys k
-  | next_pen : forall (k:Key), (exists (n:node) (t:msg), 
-       r_node n -> xmit n -> (new_at t n /\ k_ingred PK PT k t)) -> PKeys k
-with
-  PK : Set := sig PKeys
-  PT : PK -> Key.
-*)
+Inductive PKeys (k:Key) : Prop :=
+  | pkey_step : (exists (i:nat), PK i k) -> PKeys k.
+
+End Penetrable_Keys.
+Check PKeys.
+
 (*********************************************************************)
 
 (** * Paths *)
