@@ -1,4 +1,4 @@
-(* Time-stamp: <Fri 10/17/14 10:52 Dan Dougherty Strands.v> *)
+     (* Time-stamp: <Fri 10/17/14 10:52 Dan Dougherty Strands.v> *)
 
 (* TO FIX:
 
@@ -661,9 +661,9 @@ Section Penetrable_Keys.
 Parameter Kp : Set.
 Parameter PK : nat -> Key -> Prop.
 Axiom init_pkeys : sig (PK 0) = Kp.
-Axiom next_pkeys : forall (i:nat) (k:Key), exists (n:node) (t:msg),
-                      r_node n -> xmit n -> new_at t n -> 
-                      k_ingred (sig (PK i)) (K k) t -> PK (i+1) k.  
+Axiom next_pkeys : forall (i:nat) (k:Key), (exists (n:node) (t:msg),
+                      r_node n /\ xmit n /\ new_at t n /\ 
+                      k_ingred (sig (PK i)) (K k) t) -> PK (i+1) k.  
 
 Inductive PKeys (k:Key) : Prop :=
   | pkey_step : (exists (i:nat), PK i k) -> PKeys k.
@@ -705,17 +705,33 @@ Definition nth_node : nat -> list node -> node :=
   fun (n:nat) (p:list node) => nth n p default_n.
 Hint Resolve nth_node.
 
-(** ** Axioms for paths *)
+(** ** Definitions for paths *)
 Definition is_path : list node -> Prop :=
   fun  (p: list node) => forall (n : nat), 
     n < length(p) - 1 -> 
-    path_cond (nth_node n p ) (nth_node (n+1) p ).
+    path_cond (nth_node n p ) (nth_node (n+1) p).
 
 (** ** Axiom for paths *)
 (** All paths begin on a positive node and end on a negative node *)
 Axiom path_begin_pos_end_neg : forall (p : list node),
   is_path p -> xmit(nth_node 0 p) /\ recv(nth_node (length p - 1)  p).
 
+(** ** Penetrator Paths *)
+Definition p_path : list node -> Prop := 
+  fun (p:list node) => is_path p -> 
+    forall (i:nat), (i > 0 /\ i < length p - 1) ->
+    p_node (nth i p default_n).
+
+(** ** Falling paths *)
+Definition falling_path := 
+  fun (p:list node) => p_path p -> forall (i:nat), i < length p -1 ->
+    ingred (msg_of (nth (i+1) p default_n)) (msg_of (nth i p default_n)).
+
+(** ** Rising paths *)
+Definition raising_path := 
+  fun (p:list node) => p_path p -> forall (i:nat), i < length p -1 ->
+    ingred (msg_of (nth i p default_n)) (msg_of (nth (i+1) p default_n)).
+      
 
 (*********************************************************************)
 
