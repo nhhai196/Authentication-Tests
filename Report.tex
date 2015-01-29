@@ -1,0 +1,280 @@
+% FIRST OF ALL:
+% If you are using X-based Emacs to read this file, please switch on
+% Syntax Highlighting by typing:
+%    ALT-X  font-lock-mode   (or META-X on X-Terminals)
+%
+% That should make these comments nice and red so they can be easily
+% distinguished from the actual code. 
+% =======================================================================
+
+% This is a template for  Masters' Theses at WPI.
+% It complies (more or less) to the standards given by the Library 
+% (as of February 1999)
+%
+% Feel free to use this file, but I give no guarantee for its compliance
+% to standards (meaning I won't pay for the paper if the library rejects
+% it :))
+%
+%
+% The lengths (textheight, width etc.) are fine-tuned for ps1, ps2, and ps3, 
+% but seem to be somewhat dependent on the machine you are using to compile, 
+% the date, time, moon phase, the weather, and other quantum effects.
+% You may have to change \oddsidemargin a little, but it's about 98% correct.
+%
+% Also, the spacing is correct (doublespacing with footnotes correctly
+% singlespaced). Curiously, the font size is not specified in the
+% regulations. So feel free to change it, but the majority of theses
+% that I have seen is written in 12 point font.
+% 
+% As for the inclusion of graphics, I recommend the methods specified
+% in ``latexguide.ps'' off the CS-GSO Website. You can use other
+% methods including copy and paste with a photocopier, but I think
+% using the graphicx package is the easiest.
+%
+% Have fun and good luck with the thesis.
+%
+%
+%  Andreas Koeller (koeller@wpi.edu)
+%
+%
+%
+
+% The preamble
+%
+%
+% 12 point font, and your thesis is a ``report'' to LaTeX
+\documentclass[12pt]{report}
+
+% this enables correct linespacing and graphics inclusion via 
+%``\includegraphics''
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{amssymb}
+
+
+% leave 1.5in margin to the left and 1in margin to the other
+% sides. Don't print page number in the margin (but rather above it)
+\setlength{\textheight}{8.63in}
+\setlength{\textwidth}{5.9in}
+\setlength{\topmargin}{-0.2in}
+\setlength{\oddsidemargin}{0.3in}
+\setlength{\evensidemargin}{0.3in}
+\setlength{\headsep}{0.0in}
+
+% Start to write
+\begin{document}
+
+% First things first: The Titlepage
+% This is the recommended format by the library
+%
+
+
+% Define \brk as a command for leaving a little vertical space. Makes
+% the titlepage easier to read - normally, this is NOT GOOD LATEX
+% STYLE!!!
+%
+\newcommand{\brk}{\vspace*{0.18in}}
+
+% No page number on the title page
+\thispagestyle{empty}
+
+% Center the whole title page
+\begin{center}
+
+\brk
+
+% Large font and bold face for the headline. Try to keep it at one or
+% two lines. Headlines over two lines will mess up the spacing, and you have to
+% manually finetune it. Note that the line break in the SOURCE CODE
+% does not affect the line breaking in the output file. If you want
+% hardcoded line breaks, you have to mark them with a double backslash (\\)
+
+   {\large 
+	\textbf{
+	Formal Verification of Authentication Tests by\\
+	 Using the Coq Proof Assistant
+	}
+   }
+
+
+\brk
+by
+
+\brk
+% insert your name here. 
+Hai Nguyen
+
+
+% All this is constant:
+\brk\brk
+A Major Qualifying Project
+
+\brk
+Submitted to the Faculty
+
+\brk
+of the 
+
+\brk
+WORCESTER POLYTECHNIC INSTITUTE
+	
+\brk
+In partial fulfillment of the requirements for the
+
+\brk
+Degree of Bachelor of Science
+
+\brk
+in
+
+\brk
+Computer Science and Mathematical Sciences
+
+\brk
+by
+
+% This is how LaTeX draws lines :) It's where your signature goes.
+\brk\brk
+\rule{3in}{1.2pt}
+
+% Adjust this to your preferred month and year
+\brk
+Jan 2015
+
+\end{center}
+
+	
+\vfill
+APPROVED:
+
+\vspace{0.5in}
+\rule{3in}{0.8pt}
+
+% Change this 
+Professor Daniel J. Dougherty, MQP Advisor
+
+% end of titlepage
+\newpage
+
+% This is the command for doublespacing when you use the setspace
+% package
+% Please do NOT use \baselinestretch, this will mess up everything,
+% cause earthquakes, tornados and lots of questions for me...
+% If you need a singlespaced paragraph (BAD STYLE!!!), use
+% \singlespacing or \onehalfspacing and enclose it together with the
+% paragraph in braces {\singlespacing This is my text... blah blah blah}
+%
+\doublespacing
+
+% Now you can start to be creative.
+% First, you need an abstract.
+% Fortunately, LaTeX has thought of that, so it's very easy:
+%
+\begin{abstract}
+In a cryptographic protocol, suppose a principal creates and transmits a message containing a new value v which later receives back in different cryptographic context. We can conclude that some principal possessing the relevant key has received and transformed the message containing v. In many cases, the action of receiving and transforming must be done by some regular principal not a penetrator. An inference of such argument is an authentication test. In this paper we formally prove the correctness of two authentication tests under strand space formalism approach by using the Coq proof assistant. Coq is a formal proof management system. It provides formal language to express mathematical assertions, mechanically checks proofs of these assertions. It also helps to find formal proofs and extracts a certified program from the constructive proof of its formal specification. Coq works within the theory of the calculus of inductive constructions which is a derivative of of the calculus of constructions. We first formalize strand spaces by giving Mathematical definitions of nodes, strands, messages... Then we express the two authentication tests, outgoing test and incoming test, and give constructive proofs for them. Combining these two tests, we can determine whether a certain value like a nonce remains secret so we can check whether authentication property is achieved in a cryptographic protocol.
+\end{abstract}
+
+% From here on, we need Roman page numbers according to the library
+% regulations. So let's assign those.
+
+\pagenumbering{roman} % or {Roman} if you like them capitalized
+
+% The next thing is the Preface (``Acknowledgements'').
+% No standard environment for that, so we'll format it by hand.
+%
+\begin{center}
+	\textbf{Acknowledgements}
+\end{center}
+
+	I would like to express my gratitude to my advisor who made
+	sure my MQP has at least 40 pages, 20 pictures and lots
+	of formulas and thus made me master \LaTeX{} like my native
+	language.
+
+        My thanks are also due to my reader... who has read the thesis
+        in the two days that I gave him since it wasn't done until two
+        days before due date.
+
+	Thanks also to ... lots of friends, the fact that a week has
+	seven days instead of only five as I had always thought, and
+	the fact that I own a key to the building so I can work at four
+	in the morning whenever I feel like it. That is, all the time.
+
+% P.S. You don't have to add me to the acknowledgements for providing 
+% this file :)
+
+\clearpage
+
+
+% Now comes the Table of Contents, really easy in LaTeX. you never
+% have to worried about it. (Think of all the hours you would
+% have wasted in Word getting this thing updated without crashing
+% the system) :).
+
+\tableofcontents
+
+% THAT'S IT. REALLY. Everything else is automatic. No formatting, no headline.
+% All predefined.
+
+% Now - just as easy - the List of Figures.
+% This will catch all objects enclosed in \begin{figure}\end{figure}
+% statements.
+\listoffigures
+
+% There is also a list of tables, if you have any.
+% This will catch all objects enclosed in \begin{table}\end{table}
+% statements.
+\listoftables
+
+
+% And we need a clear separation between preface and text, otherwise
+% the numbering gets confused.
+
+\clearpage
+
+% And now - tataa - the text.
+% This is the place to become really creative.
+
+% From here on, we need arabic numbering again and we need to start
+% from 1.
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+% 
+% Since this is a ``report'', the topmost level of hierarchy is
+% ``Chapter'', not section as you may be used to. Chapters are
+% enumerated starting from 1, so Sections are 1.1, Subsections are
+% 1.1.1, subsubsections don't get numbers. (You can change that, if
+% you want them to be called 1.1.1.1)
+%
+
+
+\input{body}
+
+\bibliographystyle{alpha}
+\bibliography{foo}
+
+% which assumes a file foo.bib in your working directory.
+% The word ``Bibliography'' will appear in your document as soon as
+% you used ``bibtex'' on the command line.
+%
+% For reference on this, refer to the CS-GSO homepage.
+
+%============================
+%That's all, folks. Have fun.
+%
+%                     Andreas
+%============================
+
+An outgoing test is one in which the new value v is transmitted in an encrypted form and only regular principal possessing inverse key can take it out from that. An incoming test is one in which the new value v is received back in an encrypted form and only regular principal can put it in that form
+\end{document}
+
+
+
+
+
+
+
+
+

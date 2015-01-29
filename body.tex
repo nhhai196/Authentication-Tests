@@ -1,0 +1,82 @@
+\chapter{Introduction.}
+This should ideally contain some text.
+
+\section{Objectives and Project Motivation.}
+
+Cryptographic protocols are intended to let principals communicate securely over a communication protocol which are designed to provide various kinds of security assurances. An important security goal of cryptographic protocol is authentication, the act of confirming the truth of an attribute of a datum or entity like verifying freshness of a nonce. Many research papers about authentication have published. One of them is “Authentication Tests and the Structure of Bundles” by Joshua Guttman and Javier Thayer. The main idea of authentication tests is that if a principal in a cryptographic protocol creates and transmits a message containing a new value v, and later receives v back in a different cryptographic context then it can be concluded that some principal processing the relevant key has received and transformed the message in which  was emitted. Though authentication tests are proved in the paper, they have not been formally verified. In this project we will give detailed formal proofs of authentication tests under strand space formalism approach by using the Coq proof assistant so that researchers in security area have more confidence in using the result of authentication tests in the later.
+
+\section{Strand Space Overview.}
+In this section, we briefly summarize the ideas behind the strand space model. The Coq development in the next chapter will provides precise definitions.\\
+A strand spaces is a set of strands; one may think of a strand space as containing all legitimate executions together with all the actions that a penetrator may apply to the messages contained in these executions.\\
+A strand is a sequence of events that a single principal, either a legitimate principal or a penetrator, may engage in. Each strand is a sequence of message transmissions and receptions with specific values such as nonces and keys. Transmission of a term $t$ is represented as $+t$ and reception of a term $t$ is represented as $-t$. Each element of a strand is called a node. Given a strand $s$, $(s,i)$ is the $i^th$ node on $s$. We say that $n \Rightarrow n'$ if $n=(s,i)$ and $n'=(s,i+1)$. Thus, the relation $\Rightarrow^+$ between two nodes is the transitive closure of the relation $\Rightarrow$. The relation $n \rightarrow n'$ represents the inter-strand communication; it means that $term(n)=+t$ and $term(n')=-t$; here $term(n)$ denotes the signed (unsigned) message at the node$n$.\\
+Let $A$ be the set of all possible messages that can be exchanged between principals in a protocol. We call elements of $A$ terms. $A$ is freely generated from two disjoint sets, set of texts $T$ and set of cryptographic keys $K$, by concatenations $encr : K \times A \rightarrow A$ and encryptions $join : A \times A \rightarrow A$. The set $K$ is equipped with an injective unary operator $inv : K \rightarrow K$ which maps each member of asymmetric key pair to the other and maps a symmetric key to itself.\\
+A term $t_1$ is a subterm of another term $t_2$, denoted as $t_1 \sqsubset t_2$, if we can get $t_2$ from $t_1$ by repeatedly concatenating with arbitrary terms and encrypting with arbitrary keys. For example, $A, N_a$ are subterms of ${|N_aA|}_K$ but $K$ is not.\\
+Another important concept under strand space is origination. We say that a term t originates at a node n if n is a transmission node, $t \sqsubset term(n)$, and t is not a sub-term of any earlier node of $n$; hence, $n$ is the first node in its strand includes $t$. A node is called uniquely originating if it is originated on only one node over all strands. \\
+A bundle is a casually well-founded collection of nodes and two relations $\Rightarrow$ and $\rightarrow$. It represents the actual protocol interactions.  
+
+
+\section{The Coq Proof Assistant Overview.}
+dd note:  first, write a one-page overview (longer if it is easier)
+In outline form is OK
+
+Discuss:
+
+ - use cases
+
+ - user interaction (note: different from ``push-button'' , not
+ interactive, theorem proving)
+
+ - say: based on a certain higher-order logic
+
+ - etc
+We briefly describe what the Coq proof assistant is in this section.
+Under programming language point of view, Coq implements dependently typed functional programming language, while under logical system, it implements a higher-order type theory.
+The Coq system is a computer tool for verifying theorem proofs. These theorems may concern usual mathematics, proof theory, or program verification. The Coq proof assistant are very powerful and expressive both for reasoning and programming. We can construct from simple terms and write simple proofs to building whole theories and complex algorithms. It provides an environment for developing mathematical facts. This includes defining objects (integers, sets, trees, functions...), making statements using logical connectives and basic predicates, and writing proofs.\\
+Under programming language point of view, Coq implements dependently typed functional programming language, while under logical system point of view, it implements a higher-order type theory. Hence, the coq system is based on the Calculus of Inductive Constructions and a certain higher order logic.\\
+Coq can be used from standard teletype-like shell window but preferably through the graphical user interface called CoqIde. Coq is not an automated theorem prover but it can be considered as a semi-automated theorem prover since it includes many automatic theorem proving tatics and various decision procedures. 
+ 
+ 
+
+
+\chapter{Strand Space Formalization}
+
+
+\chapter{Authentication Tests}
+
+\chapter{Conclusion and Future Work}
+
+% Let's assume this is the end of your thesis text.
+
+% Now come appendices, if you had any.
+% Appendices are automatically numbered, just like everything else in
+% LaTeX. But only after you gave this command
+\appendix
+
+\chapter{More to say}
+
+\section{A section within an appendix.}
+This is an appendix.
+
+
+% Last and least (at least, that's what the library says) - the
+% Bibliography.
+
+
+% you can save some space by having the bibliography singlespaced, if you want
+\singlespacing
+
+%
+% You should become familiar with the BibTeX program, which
+% uses a *.bib-file to collect all citations that you have. It's a lot
+% prettier than typing all the citations right into the document. The 
+% reference to citations also works well that way, but the exact 
+% explanation of that will be on the CS-GSO homepage, whenever I'll ever 
+% have time for that.
+%
+%
+% If you use BibTeX, the bibliography is very easy. You refer to
+% citations in the text with \cite{tag}, where tag is the tag that you
+% defined in the bib-file.
+% Then, you run bibtex once in a while during compilation, and the
+% rest is done in two lines:
+
