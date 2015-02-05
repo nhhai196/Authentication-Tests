@@ -563,6 +563,26 @@ Axiom P_node_strand :
 (* TODO : move to right place *)
 Axiom ssuccs_same_strand :
   forall (n1 n2 : node), ssuccs n1 n2 -> strand_of n1 = strand_of n2.
+
+(** ** Basic Results for Penetrator Strands *)
+(* If n is a node of a MStrand or KStrand, then n is a positive node *)
+Axiom MStrand_xmit_node : 
+  forall (n:node), MStrand (strand_of n) -> xmit n.
+
+Axiom KStrand_xmit_node :
+  forall (n:node), KStrand (strand_of n) -> xmit n.
+
+Axiom CStrand_not_falling : 
+  forall (s:strand), CStrand s -> 
+    ~ exists (n1 n2 : node), n1 <> n2 /\ 
+        strand_of n1 = s /\ strand_of n2 = s /\ 
+        ingred (msg_of n2) (msg_of n1).
+Axiom EStrand_not_falling : 
+  forall (s:strand), EStrand s -> 
+    ~ exists (n1 n2 : node), n1 <> n2 /\ 
+        strand_of n1 = s /\ strand_of n2 = s /\ 
+        ingred (msg_of n2) (msg_of n1).
+
                    
 (*********************************************************************)
 
@@ -728,10 +748,24 @@ Definition falling_path :=
     ingred (msg_of (nth (i+1) p default_n)) (msg_of (nth i p default_n)).
 
 (** ** Rising paths *)
-Definition raising_path := 
+Definition rising_path := 
   fun (p:list node) => p_path p -> forall (i:nat), i < length p -1 ->
     ingred (msg_of (nth i p default_n)) (msg_of (nth (i+1) p default_n)).
-      
+
+(** ** Basic results for falling and rising paths *)
+Lemma falling_imp_D_or_S : 
+  forall (p:list node), falling_path p -> 
+      forall (i:nat), 0 < i /\ i < length p - 1 /\ recv (nth i p default_n) -> 
+          DStrand (strand_of (nth i p default_n)) \/
+          SStrand (strand_of (nth i p default_n)).
+Admitted.
+
+Lemma rising_imp_E_or_C :
+  forall (p:list node), rising_path p -> 
+      forall (i:nat), 0 < i /\ i < length p - 1 /\ recv (nth i p default_n) -> 
+          EStrand (strand_of (nth i p default_n)) \/
+          CStrand (strand_of (nth i p default_n)).
+Admitted.
 
 (*********************************************************************)
 
@@ -789,6 +823,45 @@ simpl. split.
      intro Hn1_lt. assert (n1=0). omega. subst. apply Hcom.
      intros Hn1_lt. apply False_ind. omega.
 Qed.      
+
+(*********************************************************************)
+(** * Proposition 7 *)
+Section P7_1.
+Variable pl : path.
+Variable i : nat.
+Let p := fst (split pl).
+Let l := snd (split pl).
+Let p_i := nth_node i p.
+Let p_i1 := nth_node (i+1) p.
+Hypothesis Hc : 0 < i /\ i < length pl - 1.
+Hypothesis Hfp : falling_path p.
+Hypothesis Hrec : recv p_i.
+Hypothesis Hpn : p_node p_i.
+Let s := strand_of p_i.
+
+Lemma P7_1 : 
+  enc (msg_of p_i) \/ pair (msg_of p_i).
+Admitted.
+Section P7_1_a.
+Variable h : msg.
+Variable k : Key.
+Hypothesis Heq : msg_of p_i = E h k.
+Lemma P7_1a : 
+  EStrand s /\ msg_of p_i1 = h.
+Admitted.
+End P7_1_a.
+
+Section P7_1_b.
+Variable g h : msg.
+Lemma P7_1_b : 
+  SStrand s /\ (msg_of p_i1 = h \/ msg_of p_i1 = g).
+Admitted.
+End P7_1_b.
+End P7_1.
+Check P7_1a.
+Check P7_1.
+  
+ 
 
 (*********************************************************************)
 
@@ -1146,3 +1219,22 @@ case H3.
       exists (p0++(n',L')::nil).
 Admitted.
 
+(*********************************************************************)
+
+(** * Proposition 13 *)
+Section P13. 
+Variable pl : path.
+Let p := fst (split pl).
+Let l := snd (split pl).
+Hypothesis Hpp : p_path p.
+Hypothesis Hp1 : simple (msg_of (nth_node 0 p)).
+Definition P13_1_aux (n:nat) : Prop :=
+   msg_of (nth_node n p) = (nth_msg (length p - 1) l) /\
+    forall (i:nat), i >= n -> i <= length p - 1 -> 
+       nth_msg i l = nth_msg (length p - 1) l.
+Lemma P13_1 : 
+  exists (n:nat), P13_1_aux n /\ 
+    (forall m, m > n -> ~ P13_1_aux m) /\
+    exists i, i < length p - 1 -> nth_msg i l <> nth_msg (i+1) l ->
+      xmit (nth_node n p) /\ EStrand (strand_of (nth_node n p)).
+    
