@@ -689,7 +689,6 @@ Inductive PKeys (k:Key) : Prop :=
   | pkey_step : (exists (i:nat), PK i k) -> PKeys k.
 
 End Penetrable_Keys.
-Check PKeys.
 
 (*********************************************************************)
 
@@ -766,6 +765,7 @@ Lemma rising_imp_E_or_C :
           EStrand (strand_of (nth i p default_n)) \/
           CStrand (strand_of (nth i p default_n)).
 Admitted.
+
 
 (*********************************************************************)
 
@@ -858,10 +858,6 @@ Lemma P7_1_b :
 Admitted.
 End P7_1_b.
 End P7_1.
-Check P7_1a.
-Check P7_1.
-  
- 
 
 (*********************************************************************)
 
@@ -1237,4 +1233,7 @@ Lemma P13_1 :
     (forall m, m > n -> ~ P13_1_aux m) /\
     exists i, i < length p - 1 -> nth_msg i l <> nth_msg (i+1) l ->
       xmit (nth_node n p) /\ EStrand (strand_of (nth_node n p)).
-    
+Admitted.
+End P13.
+End Path.    
+
