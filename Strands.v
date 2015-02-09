@@ -24,7 +24,11 @@ Require Import Classical.
 Require Import Message_Algebra.
 Require Import Lists.ListSet.
 Require Import Lists.List.
-Require Import Omega.
+Require Import Omega ZArith.
+
+Open Scope list_scope.
+Import ListNotations.
+Open Scope ma_scope.
 
 (** * The signature (vocabulary) for the models *)
 (*  *************************************** *)
@@ -36,7 +40,12 @@ Variable role : Set.
 (* Predicate for positive and negative nodes *)
 Variable xmit : node -> Prop.
 Variable recv : node -> Prop.
-Variable msg_of : node -> msg.  
+
+Variable smsg_of : node -> smsg.  
+Definition msg_of : node -> msg := 
+  fun (n:node) => smsg_2_msg (smsg_of n).
+Hint Resolve msg_of.
+ 
 Variable msg_deliver : node -> node -> Prop.
 Variable ssucc : node ->  node -> Prop.
 Definition path : Type := list (prod node msg).
@@ -49,9 +58,6 @@ Variable r_node : node -> Prop.
 
 (* not needed here...do it in protocol specs *)
 (* Variable role_of: strand -> role.   (** maybe should be a relation *) *)
-(* Variable strand_of: node -> strand. *)
-
-
 
 (** * Some defined notions *)
 (*  ************************ *)
@@ -175,6 +181,41 @@ Axiom ssucc_not_ref: forall (n:node),  ssucc n n -> False.
 Axiom ssucc_partial_fun: 
   forall (n n1 n2: node),  ssucc n n1 /\ ssucc n n2  -> n1 = n2.
 
+(** Every node and its successor are on the same strand *)
+Axiom ssucc_same_strand :
+  forall (n1 n2 : node), ssucc n1 n2 -> strand_of n1 = strand_of n2.
+Hint Resolve ssucc_same_strand.
+
+(** Every sign message of a node must belong to node's strand *)
+Axiom smsg_on_strand :
+  forall n l, strand_of n = l -> set_In (smsg_of n) l.
+
+(** If a sign message of a node is possitive, then it is a positive node *)
+Axiom positive_smsg :
+  forall (n:node) (m:msg), smsg_of n = + m -> xmit n.
+
+(** If a sign message of a node is negative, then it is a negative node *)
+Axiom negative_smsg :
+  forall (n:node) (m:msg), smsg_of n = - m -> recv n.
+
+(** Every regular node lies on a regular strand *)
+
+
+(** Every penetrator node lies on a penetrator strand *)
+
+
+(** Lemma for strand_of *)
+Lemma ssuccs_same_strand :
+  forall (n1 n2 : node), ssuccs n1 n2 -> strand_of n1 = strand_of n2.
+Proof.
+intros n1 n2 Hs.
+induction Hs. 
+auto.
+assert (Hs' : strand_of x = strand_of y'). auto.
+rewrite IHHs in Hs'. auto.
+Qed.
+  
+  
 (** ** Message-delivery relation *)
 (*  ---------------------------  *)
 
@@ -510,10 +551,8 @@ End IngredientsOriginate.
 (*********************************************************************)
 
 (** * Penetrator Strands *)
+Section PenetratorStrand.
 Parameter K_p : set Key. 
-Open Scope list_scope.
-Import ListNotations.
-Open Scope ma_scope.
 
 Inductive MStrand (s : strand) : Prop := 
   | P_M : forall t : Text, s = [+ (T t)] -> MStrand s.
@@ -558,31 +597,95 @@ Hint Constructors PenetratorStrand.
 Axiom P_node_strand : 
   forall (n:node), p_node n -> PenetratorStrand (strand_of n).
 
-
-(** Axiom for strand_of *)
-(* TODO : move to right place *)
-Axiom ssuccs_same_strand :
-  forall (n1 n2 : node), ssuccs n1 n2 -> strand_of n1 = strand_of n2.
-
 (** ** Basic Results for Penetrator Strands *)
 (* If n is a node of a MStrand or KStrand, then n is a positive node *)
-Axiom MStrand_xmit_node : 
+Lemma MStrand_xmit_node : 
   forall (n:node), MStrand (strand_of n) -> xmit n.
+Proof.
+intros n Hm.
+inversion Hm.
+assert (Hl : set_In (smsg_of n) [+ T t]).
+apply smsg_on_strand. auto.
+elim Hl.
+  intros Hp. apply positive_smsg with (m:= T t). auto.
+  intros He. elim He.
+Qed.
 
-Axiom KStrand_xmit_node :
+Lemma KStrand_xmit_node :
   forall (n:node), KStrand (strand_of n) -> xmit n.
+Proof.
+intros n Hm.
+inversion Hm.
+assert (Hl : set_In (smsg_of n) [+ K k]).
+apply smsg_on_strand. auto.
+elim Hl.
+  intros Hp. apply positive_smsg with (m:= K k). auto.
+  intros He. elim He.
+Qed.
 
-Axiom CStrand_not_falling : 
+
+(** TODO : move to right place *)
+Lemma pair_not_ingred_comp_l :
+  forall x y, ~(P x y) <st x.
+Proof.
+intros x y Hst.
+assert (Hlt : size (P x y ) <= size x).
+apply ingred_lt. auto.
+assert (Hgt : size (P x y) > size x).
+simpl. apply size_lt_plus_l. omega.
+Qed.
+
+Lemma pair_not_ingred_comp_r :
+  forall x y, ~(P x y) <st y.
+Proof.
+intros x y Hst.
+assert (Hlt : size (P x y ) <= size y).
+apply ingred_lt. auto.
+assert (Hgt : size (P x y) > size y).
+simpl.
+Admitted.
+ 
+Lemma CStrand_not_falling : 
   forall (s:strand), CStrand s -> 
-    ~ exists (n1 n2 : node), n1 <> n2 /\ 
+    ~ exists (n1 n2 : node), recv n1 /\ xmit n2 /\ 
         strand_of n1 = s /\ strand_of n2 = s /\ 
         ingred (msg_of n2) (msg_of n1).
+Proof.
+intros s Hcs Hc.
+destruct Hc as (n1,(n2,(Hre, (Hxmit,(Hs1,(Hs2,Hingred)))))).
+assert (Hin1 : set_In (smsg_of n1) s).
+apply smsg_on_strand. auto.
+inversion Hcs.
+  assert (Hin2 : set_In (smsg_of n2) s).
+    apply smsg_on_strand. auto.
+    rewrite H in Hin2. elim Hin2.
+     intros. apply xmit_vs_recv with (n:=n2).
+       split. auto. apply negative_smsg with (m:= g). auto.
+    intros Hin21. elim Hin21.
+      intros. apply xmit_vs_recv with (n:=n2).
+       split. auto. apply negative_smsg with (m:= h). auto.
+    intros Hin22. elim Hin22.
+      intros. assert (Hmsg : msg_of n2 = P g h).
+        unfold msg_of. symmetry in H0. rewrite H0. unfold smsg_2_msg. auto.
+        rewrite H in Hin1. inversion Hin1.
+          symmetry in H1. assert (Hmsg1 : msg_of n1 = g).
+            unfold msg_of. rewrite H1. unfold smsg_2_msg. auto.
+          rewrite Hmsg, Hmsg1 in Hingred. apply (pair_not_ingred_comp_l g h). auto.
+    elim H1. intros. symmetry in H2. assert (Hmsg1 : msg_of n1 = h).
+      unfold msg_of. rewrite H2. unfold smsg_2_msg. auto.
+        rewrite Hmsg, Hmsg1 in Hingred. apply (pair_not_ingred_comp_r g h). auto.
+    intros Hin12. elim Hin12. intros. apply xmit_vs_recv with (n:=n1).
+      split. auto. apply positive_smsg with (m:=P g h). auto. auto.
+    auto. auto.
+Qed.
+    
 Axiom EStrand_not_falling : 
   forall (s:strand), EStrand s -> 
     ~ exists (n1 n2 : node), n1 <> n2 /\ 
         strand_of n1 = s /\ strand_of n2 = s /\ 
         ingred (msg_of n2) (msg_of n1).
 
+End PenetratorStrand.
                    
 (*********************************************************************)
 
@@ -809,6 +912,8 @@ Definition is_trans_path : Prop :=
 End Trans_path.
 
 (* Baby result : a single pair (n, L) is a trans-foramtion path *)
+Open Scope list_scope.
+Check [1].
 Lemma anode_trans_path : 
   forall (n:node) (t:msg), 
     t <[node] n -> is_trans_path [(n,t)].
@@ -822,7 +927,7 @@ simpl. split.
   intros n1; split.
      intro Hn1_lt. assert (n1=0). omega. subst. apply Hcom.
      intros Hn1_lt. apply False_ind. omega.
-Qed.      
+Qed.
 
 (*********************************************************************)
 (** * Proposition 7 *)
