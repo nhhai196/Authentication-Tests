@@ -117,6 +117,7 @@ Proof.
 intros.
 decide equality.
 Qed.
+Hint Resolve eq_smsg_dec.
 
 (** ** Atomic messages *)
 Inductive atomic : msg -> Prop := 

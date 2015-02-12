@@ -83,7 +83,8 @@ endif
 VFILES:=Message_Algebra.v\
   Protocol_HD.v\
   Strands.v\
-  Well_founded.v
+  Well_founded.v\
+  Strand_library.v
 
 -include $(addsuffix .d,$(VFILES))
 .SECONDARY: $(addsuffix .d,$(VFILES))

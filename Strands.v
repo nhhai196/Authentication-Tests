@@ -21,96 +21,253 @@
 (* Add LoadPath "./". *)
 (* Add LoadPath "./Classical_Wf". *)
 Require Import Classical.
-Require Import Message_Algebra.
-Require Import Lists.ListSet.
-Require Import Lists.List.
+Require Import Message_Algebra Strand_library.
+Require Import Lists.ListSet Lists.List.
 Require Import Omega ZArith.
+Require Import Relation_Definitions Relation_Operators.
 
 Open Scope list_scope.
 Import ListNotations.
 Open Scope ma_scope.
 
-(** * The signature (vocabulary) for the models *)
+(* Strand Spaces *)
 (*  *************************************** *)
 
-Variable node : Set. 
-(* Variable strand : Set. *)
+(** * Strands *)
+(** ** Strand Definition *)
 Definition strand : Type := list smsg.
-Variable role : Set.
-(* Predicate for positive and negative nodes *)
-Variable xmit : node -> Prop.
-Variable recv : node -> Prop.
 
-Variable smsg_of : node -> smsg.  
-Definition msg_of : node -> msg := 
-  fun (n:node) => smsg_2_msg (smsg_of n).
-Hint Resolve msg_of.
+(** ** Decidable equality for strands *)
+Definition eq_strand_dec : forall x y : strand,{x = y} + {x <> y}.
+Proof. 
+intros. decide equality.
+Qed.
+Hint Resolve eq_strand_dec.
 
-Variable msg_deliver : node -> node -> Prop.
-Variable ssucc : node ->  node -> Prop.
+(*********************************************************************)
+
+(** * Nodes *)
+(** ** Definition *)
+Definition node : Type := {n:(prod strand nat)| snd n < length (fst n)}. 
+
+(** ** Strand of a node *)
+Definition strand_of (n:node) : strand := match n with 
+  | exist apair _ => fst apair end.
+
+(** ** Index of a node *)
+Definition index_of (n:node) : nat := match n with 
+  | exist apair _ => snd apair end.
+
+(** ** Decidable equality for nodes *)
+Definition eq_node_dec : forall x y : node,
+ {x = y} + {x <> y}.
+Proof.
+  intros [[xs xn] xp] [[ys yn] yp].
+  destruct (eq_strand_dec xs ys) as [EQs | NEQs]; subst.
+  destruct (eq_nat_dec xn yn) as [EQn | NEQn]; subst.
+  left. rewrite (proof_irrelevance (lt yn (length ys)) xp yp). reflexivity.
+
+  right. intros C. inversion C. auto.
+  right. intros C. inversion C. auto.
+Qed.
+Hint Resolve eq_node_dec.
+
+(** ** Signed message of a node *)
+Definition option_smsg_of (n:node) : (option smsg) :=
+  match n with 
+  | exist (s,i) _ => nth_error s i end.
+
+Lemma valid_smsg : forall (n:node), {m:smsg | option_smsg_of n = Some m}.
+Proof.
+intros n.
+remember (option_smsg_of n) as opn.
+destruct n. destruct opn.
+exists s. auto.
+
+unfold option_smsg_of in Heqopn.
+destruct x. simpl in l.
+symmetry in Heqopn.
+apply nth_error_len in Heqopn.
+omega.
+Qed.
+
+Definition smsg_of (n:node) : smsg := match (valid_smsg n) with
+  | exist m _  => m end.
+
+(** ** Unsigend message of a node *)
+Definition msg_of (n:node) : msg := smsg_2_msg (smsg_of n).
+
+(** ** Predicate for positive and negative nodes *)
+Definition xmit (n:node) : Prop := exists (m:msg), smsg_of n = + m.
+
+Definition recv (n:node) : Prop := exists (m:msg), smsg_of n = - m.
+
+(*********************************************************************)
+
+(** * Edges *)
+(** ** Inter-strand Edges *)
+Inductive msg_deliver : relation node :=
+  | msg_deliver_step : forall (n1 n2 : node) (m:msg), 
+    smsg_of n1 = +m /\ smsg_of n2 = -m /\ strand_of(n1) <> strand_of(n2)
+    -> msg_deliver n1 n2.
+Hint Constructors msg_deliver.
+Notation "x --> y" := (msg_deliver x y) (at level 0, right associativity) : ss_scope.
+
+(** ** Iner-strand Edges - Strand ssuccessor *)
+Inductive ssucc : relation node :=
+  | ssucc_step : forall (n1 n2 : node), strand_of(n1) = strand_of(n2) /\
+    index_of(n1) + 1 = index_of(n2) -> ssucc n1 n2.
+Hint Constructors ssucc.     
+Notation "x ==> y" := (ssucc x y) (at level 0, right associativity) : ss_scope.
+
+(** Transitive closure of strand ssuccessor *)
+Definition ssuccs : relation node := clos_trans node ssucc.
+Notation "x ==>+ y" := (ssucc x y) (at level 0, right associativity) : ss_scope.
+
+(** ** Edges on Strand *)
+Inductive edge : relation node :=
+  | edge_single : forall n1 n2, msg_deliver n1 n2 -> edge n1 n2
+  | edge_double : forall n1 n2, ssucc n1 n2 -> edge n1 n2.
+
+(** Transitive closure of edge *)
+Definition prec := clos_trans node edge.
+
+(*********************************************************************)
+
+(** * Origination *)
+
+Definition orig_at (n:node) (m:msg) : Prop :=
+  xmit(n) /\  (ingred m (msg_of n)) /\
+  (forall (n':node), ((ssuccs n' n) -> 
+  (ingred m (msg_of n')) -> False)).
+
+Definition non_orig (m:msg) : Prop := forall (n:node), ~orig_at n m.
+
+Definition unique (m:msg) : Prop :=
+  (exists (n:node), orig_at n m) /\
+  (forall  (n n':node),(orig_at n m) /\ (orig_at n' m) -> n=n').
+
+(*********************************************************************)
+
+(** * Penetrator Strands *)
+Section PenetratorStrand.
+  Parameter K_p : set Key. 
+
+  Inductive MStrand (s : strand) : Prop := 
+  | P_M : forall t : Text, s = [+ (T t)] -> MStrand s.
+  Hint Constructors MStrand.
+
+  Inductive KStrand (s : strand) : Prop := 
+  | P_K : forall k : Key, set_In k K_p -> s = [+ (K k)] -> KStrand s.
+  Hint Constructors KStrand.
+
+  Inductive CStrand (s : strand) : Prop := 
+  | P_C : forall (g h : msg), s = [- g; - h; + (P g h)] -> CStrand s.
+  Hint Constructors CStrand.
+
+  Inductive SStrand (s : strand) : Prop := 
+  | P_S : forall (g h : msg), s = [- (P g h); + g ; + h] -> SStrand s.
+  Hint Constructors SStrand.
+
+  Inductive EStrand (s : strand) : Prop := 
+  | P_E : forall (k : Key) (h :msg), s = [- (K k); - h; + (E h k)] -> EStrand s.
+  Hint Constructors EStrand.
+
+  Inductive DStrand (s : strand) : Prop := 
+  | P_D : forall (k k' : Key) (h :msg), 
+    inv k k' -> s = [- ( K k'); - (E h k); + h] -> DStrand s.
+  Hint Constructors DStrand.
+
+  (*Definition PenetratorStrand (s : strand) : Prop := 
+    MStrand s \/ KStrand s \/ CStrand s \/ SStrand s \/ EStrand s \/ DStrand s.*)
+  Inductive PenetratorStrand (s:strand) :Prop :=
+  | PM : MStrand s -> PenetratorStrand s
+  | PK : KStrand s -> PenetratorStrand s
+  | PC : CStrand s -> PenetratorStrand s
+  | PS : SStrand s -> PenetratorStrand s
+  | PE : EStrand s -> PenetratorStrand s
+  | PD : DStrand s -> PenetratorStrand s.
+
+End PenetratorStrand.
+
+(*********************************************************************)
+(** * Axioms *)
+(*  ******** *)
+
+(** ** xmit and recv *)
+
+(** No node is both transmit and receive %\\% *)
+Lemma xmit_vs_recv: forall (n:node),  xmit(n) -> recv(n) -> False.
+Proof.
+intros n Hx Hr.
+inversion Hx. inversion Hr.
+rewrite H in H0. discriminate.
+Qed.
+
+(** every  node is either transmit or receive %\\% *)
+Axiom xmit_or_recv: forall (n: node), xmit n \/ recv n.
+
+
+(** strand-successor is irreflexive %\\% *)
+Lemma ssucc_not_ref: forall (n:node),  ssucc n n -> False.
+Proof.
+intros n Hs. inversion Hs. destruct H. omega.
+Qed.
+
+
+Lemma eq_nodes : forall (x y : node), strand_of(x) = strand_of(y) -> 
+  index_of(x) = index_of(y) -> x = y.
+Proof.
+  intros [[xs xn] xp] [[ys yn] yp] eq_index eq_strand.
+  simpl in eq_index, eq_strand. subst.
+  rewrite (proof_irrelevance (lt yn (length ys)) xp yp). reflexivity.
+Qed.
+
+(** strand-successors are unique %\\% *)
+Lemma ssucc_unique: 
+  forall (x y z: node),  ssucc x y -> ssucc x z  -> y = z.
+Proof.
+  intros x y z Hxy Hxz.
+  destruct Hxy, Hxz.
+  apply eq_nodes; destruct H, H0; try omega; congruence.
+Qed.
+Hint Resolve ssucc_unique.
+
+(** Every node and its successor are on the same strand *)
+Lemma ssucc_same_strand :
+  forall (x y : node), ssucc x y -> strand_of(x) = strand_of(y).
+Proof.
+intros x y Sxy. inversion Sxy. destruct H; auto.
+Qed.
+Hint Resolve ssucc_same_strand.
+
+(** Every sign message of a node must belong to node's strand *)
+Axiom smsg_on_strand :
+  forall n l, strand_of n = l -> set_In (smsg_of n) l.
+
+(** *** The bundle axiom: every received  message was sent  *)
+Axiom was_sent : forall x : node, (recv x) -> 
+  (exists y : node,  msg_deliver y x).
+
+(** ** Well-foundedness *)
+Axiom wf_prec: well_founded prec.
+
+(** Every regular node lies on a regular strand *)
+
+
+(** Every penetrator node lies on a penetrator strand *)
+
+Parameter default_smsg : smsg.
+Parameter default_node : node.
+Parameter default_msg : msg.
+
 Definition path : Type := list (prod node msg).
-(* Variable regular_strand : set strand. *)
-(* Variable penetrable_strand : set strand.*)
-Variable strand_of: node -> strand.
+
 (* Predicates for regular nodes and penetrable nodes *)
 Variable p_node : node -> Prop.
 Variable r_node : node -> Prop.
 
-(* not needed here...do it in protocol specs *)
-(* Variable role_of: strand -> role.   (** maybe should be a relation *) *)
-
-(** * Some defined notions *)
-(*  ************************ *)
-
-(** *** Predecessor along a strand *)
-Definition spred : node -> node -> Prop := fun x y => ssucc y x.
-
-(** *** Strand-predecessor or message-deliver *)
-Definition prec_generator : node -> node -> Prop  := 
-  fun n m => ssucc n m \/ msg_deliver n m.
-
-
-(** *** Transitive closures *)
-(*  ------------------- *)
-
-(* Transitive closure of strand-successor *)
-Inductive ssuccs (x z: node) : Prop :=
-| ssuccs_step : ssucc x z -> ssuccs x z
-| ssuccs_trans (y': node) : ssucc x y'-> ssuccs y' z  -> ssuccs x z.
-
-
-(* Transitive closure of strand-predecessor *)
-Inductive spreds (x z: node) : Prop :=
-| spreds_step : spred x z -> spreds x z
-| spreds_trans (y': node) : spred x y'-> spreds y' z  -> spreds x z.
-
-(* Transitive closure of (ssucc \/ msg_deliver) *)
-Inductive prec (x z: node) : Prop :=
-| prec_ssucc_step : ssucc x z -> prec x z
-| prec_msg_step :  msg_deliver x z -> prec x z
-| prec_ssucc_trans (y': node) : ssucc x y'-> prec y' z  -> prec x z
-| prec_msg_trans (y': node) : msg_deliver x y'-> prec y' z  -> prec x z.
-
-
-(** *** Reflexive-Transitive closures *)
-(*  ---------------------------- *)
-
-(* Reflexive_Transitive closure of strand-successor *)
-Inductive ssuccseq (x z: node) : Prop :=
-| ssuccseq_refl : x = z -> ssuccseq x z
-| ssuccseq_trans : ssuccs x z -> ssuccseq x z.
-
-(* Reflexive_Transitive closure of strand-predecessor *)
-Inductive spredseq  (x z: node) : Prop :=
-| spredseq_refl : x = z -> spredseq x z
-| spredseq_trans : spreds x z -> spredseq x z.
-
-(* Reflexive_Transitive closure of (ssucc \/ msg_deliver) *)
-Inductive preceq  (x z: node) : Prop :=
-| preceq_refl : x = z -> preceq x z
-| preceq_trans : prec x z -> preceq x z.
-
-
+(*
 (** Minimal nodes *)
 
 Definition is_minimal: (node -> Prop) -> node -> Prop :=
@@ -118,90 +275,6 @@ Definition is_minimal: (node -> Prop) -> node -> Prop :=
 
 Definition has_min_elt: (node -> Prop) -> Prop :=
   fun P  =>   exists x:node, is_minimal P x.
-
-
-(** *** Origination *)
-
-Definition orig_at : node -> msg -> Prop :=
-  fun (n:node) (m:msg) =>
-    xmit(n) /\  (ingred m (msg_of n)) /\
-    (forall (n':node), ( (ssuccs n' n) -> 
-      (ingred m (msg_of n')) ->
-      False)).
-
-Definition non_orig : msg -> Prop :=
-  fun (m:msg) =>
-    forall (n:node), ~orig_at n m.
-
-Definition unique : msg -> Prop :=
-  fun (m:msg) =>
-    (exists (n:node), orig_at n m) /\
-    (forall  (n n':node),
-      (orig_at n m) /\ (orig_at n' m) ->
-      n=n').
-
-
-
-(* (*  Need this? *) *)
-
-(* Definition sent_by : node -> msg -> Prop :=  *)
-(*   fun (n: node) (m: msg) => *)
-(*     exists (n' :node) , (preceq n' n) /\ (msg_of n') = m. *)
-
-
-(** ** Decidable equality *)
-(*  ---------------------------  *)
-
-(** Q: what's the difference between Variable and Axiom here? %\\%
-*)
-Variable eq_msg_dec : forall x y : msg, {x = y} + {x <> y}.
-Hint Resolve eq_msg_dec.
-Variable eq_node_dec : forall x y : node, {x = y} + {x <> y}.
-Hint Resolve eq_node_dec.
-(* Variable eq_strand_dec : forall x y : strand, {x = y} + {x <> y}.
-Hint Resolve eq_strand_dec.
-*)
-
-
-(** * Axioms *)
-(*  ******** *)
-
-(** ** xmit and recv *)
-
-(** no node is both transmit and receive %\\% *)
-Axiom xmit_vs_recv: forall (n:node),  xmit(n) /\ recv(n) -> False.
-
-(** every  node is either transmit or receive %\\% *)
-Axiom xmit_or_recv: forall (n: node), xmit n \/ recv n.
-
-(** strand-successor is irreflexive %\\% *)
-Axiom ssucc_not_ref: forall (n:node),  ssucc n n -> False.
-
-(** strand-successors are unique %\\% *)
-Axiom ssucc_partial_fun: 
-  forall (n n1 n2: node),  ssucc n n1 /\ ssucc n n2  -> n1 = n2.
-
-(** Every node and its successor are on the same strand *)
-Axiom ssucc_same_strand :
-  forall (n1 n2 : node), ssucc n1 n2 -> strand_of n1 = strand_of n2.
-Hint Resolve ssucc_same_strand.
-
-(** Every sign message of a node must belong to node's strand *)
-Axiom smsg_on_strand :
-  forall n l, strand_of n = l -> set_In (smsg_of n) l.
-
-(** If a sign message of a node is possitive, then it is a positive node *)
-Axiom positive_smsg :
-  forall (n:node) (m:msg), smsg_of n = + m -> xmit n.
-
-(** If a sign message of a node is negative, then it is a negative node *)
-Axiom negative_smsg :
-  forall (n:node) (m:msg), smsg_of n = - m -> recv n.
-
-(** Every regular node lies on a regular strand *)
-
-
-(** Every penetrator node lies on a penetrator strand *)
 
 
 (** Lemma for strand_of *)
@@ -215,24 +288,6 @@ Proof.
   rewrite IHHs in Hs'. auto.
 Qed.
 
-
-(** ** Message-delivery relation *)
-(*  ---------------------------  *)
-
-(** *** Messages match *)
-Axiom msg_deliver_ax :
-  forall x y : node, (msg_deliver x y) -> 
-    (xmit x /\ recv y /\ msg_of x = msg_of y).
-
-(** *** The bundle axiom: every received  message was sent  *)
-Axiom was_sent : forall x : node, (recv x) -> 
-  (exists y : node,  msg_deliver y x).
-
-(** ** Well-foundedness *)
-
-(* Better would be to just postulate well_founded for (ssucc \/ msg-deliver)
-*)
-Axiom wf_prec: well_founded prec.
 
 (** * Theorems *)
 (*  ********** *)
@@ -549,45 +604,6 @@ Section IngredientsOriginate.
 End IngredientsOriginate.
 
 (*********************************************************************)
-
-(** * Penetrator Strands *)
-Section PenetratorStrand.
-  Parameter K_p : set Key. 
-
-  Inductive MStrand (s : strand) : Prop := 
-  | P_M : forall t : Text, s = [+ (T t)] -> MStrand s.
-  Hint Constructors MStrand.
-
-  Inductive KStrand (s : strand) : Prop := 
-  | P_K : forall k : Key, set_In k K_p -> s = [+ (K k)] -> KStrand s.
-  Hint Constructors KStrand.
-
-  Inductive CStrand (s : strand) : Prop := 
-  | P_C : forall (g h : msg), s = [- g; - h; + (P g h)] -> CStrand s.
-  Hint Constructors CStrand.
-
-  Inductive SStrand (s : strand) : Prop := 
-  | P_S : forall (g h : msg), s = [- (P g h); + g ; + h] -> SStrand s.
-  Hint Constructors SStrand.
-
-  Inductive EStrand (s : strand) : Prop := 
-  | P_E : forall (k : Key) (h :msg), s = [- (K k); - h; + (E h k)] -> EStrand s.
-  Hint Constructors EStrand.
-
-  Inductive DStrand (s : strand) : Prop := 
-  | P_D : forall (k k' : Key) (h :msg), 
-    inv k k' -> s = [- ( K k'); - (E h k); + h] -> DStrand s.
-  Hint Constructors DStrand.
-
-  (*Definition PenetratorStrand (s : strand) : Prop := 
-    MStrand s \/ KStrand s \/ CStrand s \/ SStrand s \/ EStrand s \/ DStrand s.*)
-  Inductive PenetratorStrand (s:strand) :Prop :=
-  | PM : MStrand s -> PenetratorStrand s
-  | PK : KStrand s -> PenetratorStrand s
-  | PC : CStrand s -> PenetratorStrand s
-  | PS : SStrand s -> PenetratorStrand s
-  | PE : EStrand s -> PenetratorStrand s
-  | PD : DStrand s -> PenetratorStrand s.
 
 (* Inductive PenetratorStrand (s : strand) : Prop :=
   | P_M : forall t : Text, s = [+ (T t)] -> PenetratorStrand s
@@ -1353,4 +1369,4 @@ Section P13.
 Admitted.
 End P13.
 End Path.    
-
+*)
