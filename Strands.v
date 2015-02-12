@@ -579,8 +579,15 @@ Section PenetratorStrand.
     inv k k' -> s = [- ( K k'); - (E h k); + h] -> DStrand s.
   Hint Constructors DStrand.
 
-  Definition PenetratorStrand (s : strand) : Prop := 
-    MStrand s \/ KStrand s \/ CStrand s \/ SStrand s \/ EStrand s \/ DStrand s.
+  (*Definition PenetratorStrand (s : strand) : Prop := 
+    MStrand s \/ KStrand s \/ CStrand s \/ SStrand s \/ EStrand s \/ DStrand s.*)
+  Inductive PenetratorStrand (s:strand) :Prop :=
+  | PM : MStrand s -> PenetratorStrand s
+  | PK : KStrand s -> PenetratorStrand s
+  | PC : CStrand s -> PenetratorStrand s
+  | PS : SStrand s -> PenetratorStrand s
+  | PE : EStrand s -> PenetratorStrand s
+  | PD : DStrand s -> PenetratorStrand s.
 
 (* Inductive PenetratorStrand (s : strand) : Prop :=
   | P_M : forall t : Text, s = [+ (T t)] -> PenetratorStrand s
@@ -754,10 +761,18 @@ Qed.
 
 (** ** Basic results about penetrator strands related to components *)
 (* A MStrand or KStrand cannot have an edge *)
-Axiom MStrand_not_edge :
+Lemma MStrand_not_edge :
   forall (s:strand), MStrand s -> ~ exists (n1 n2 : node),
     strand_of n1 = s /\ strand_of n2 = s /\ ssuccs n1 n2.
-
+Proof.
+intros s Hm Hex.
+destruct Hex as (n1, (n2, (Hs1, (Hs2, Hss)))). 
+inversion Hm.
+assert (Hin1 : set_In (smsg_of n1) s). apply smsg_on_strand. auto.
+assert (Hin2 : set_In (smsg_of n2) s). apply smsg_on_strand. auto.
+rewrite H in Hin1, Hin2. elim Hin1.
+intro. elim Hin2.
+Admitted.
 Axiom KStrand_not_edge :
   forall (s:strand), KStrand s -> ~ exists (n1 n2 : node),
     strand_of n1 = s /\ strand_of n2 = s /\ ssuccs n1 n2.  
@@ -782,14 +797,14 @@ puts it in a form that could allow it to be penetrated, because for each key
 protecting it, the matching key decryption key is already pentrable *)
 Section Penetrable_Keys.
   Parameter Kp : Set.
-  Parameter PK : nat -> Key -> Prop.
-  Axiom init_pkeys : sig (PK 0) = Kp.
+  Parameter Pk : nat -> Key -> Prop.
+  Axiom init_pkeys : sig (Pk 0) = Kp.
   Axiom next_pkeys : forall (i:nat) (k:Key), (exists (n:node) (t:msg),
     r_node n /\ xmit n /\ new_at t n /\ 
-    k_ingred (sig (PK i)) (K k) t) -> PK (i+1) k.  
+    k_ingred (sig (Pk i)) (K k) t) -> Pk (i+1) k.  
 
   Inductive PKeys (k:Key) : Prop :=
-  | pkey_step : (exists (i:nat), PK i k) -> PKeys k.
+  | pkey_step : (exists (i:nat), Pk i k) -> PKeys k.
 
 End Penetrable_Keys.
 
@@ -800,10 +815,7 @@ Section Path.
 (** ** Path condition *)
   Inductive path_cond (m n : node) : Prop :=
   | path_cond_single :  msg_deliver m n -> path_cond m n
-  | path_cond_double : ssuccs m n /\ 
-    recv(m) /\ 
-    xmit(n) -> 
-    path_cond m n.
+  | path_cond_double : ssuccs m n /\ recv(m) /\ xmit(n) -> path_cond m n.
   Hint Constructors path_cond.
   Notation "m |--> n" := (path_cond m n) (at level 30) : ss_scope.
 
@@ -944,9 +956,14 @@ Section P7_1.
   Hypothesis Hpn : p_node p_i.
   Let s := strand_of p_i.
 
+  Lemma P7_1_aux : DStrand (strand_of p_i) \/ SStrand (strand_of p_i).
+  Admitted.
+    
+
   Lemma P7_1 : 
     enc (msg_of p_i) \/ pair (msg_of p_i).
-Admitted.
+  
+  Admitted.
 Section P7_1_a.
   Variable h : msg.
   Variable k : Key.
@@ -969,6 +986,10 @@ End P7_1.
 (** * Proposition 10 *)
 Section Proposition_10.
   Variable p : path.
+  Variable n : nat.
+  Hypothesis Htp : is_trans_path p.
+  Hypothesis Hn : n < length p - 1.
+  Hypothesis Hcom : L p n <> L p (n+1).
 
 (* TODO : move to right place *)
   Lemma ssuccs_trans' : 
@@ -990,21 +1011,18 @@ Section Proposition_10.
     rewrite H in Hxy. auto.
     apply ssuccs_trans' with (y:=y); auto.
   Qed.
-  
+
   Lemma trans_path_ssuccs : 
-    is_trans_path p -> forall (n:nat), 
-      n < length p - 1 -> L p n <> L p (n+1) ->
       ssuccs (nd p n) (nd p (n+1)) /\ recv (nd p n) /\ xmit (nd p (n+1)). 
   Proof.
-    intros.
-    unfold is_trans_path in H.
-    destruct H as ((H3,H4),H5).
+    unfold is_trans_path in Htp.
+    destruct Htp as ((H3,H4),H5).
     remember (H5 n) as H6.
     destruct H6 as (H61, H62).
-    remember (H62 H0) as H7.
+    remember (H62 Hn) as H7.
     case H7.
-    intros. apply False_ind. apply H1. auto.
-    intros. remember (H H1) as H8.
+    intros. apply False_ind. apply Hcom. auto.
+    intros. remember (H Hcom) as H8.
     destruct H8 as (Hrec, (Hxmit, (Hss, (m, (H9, (H10, (H11, H12))))))).
     repeat split.
     apply ssuccs_eq with (y:= m); auto.
@@ -1012,28 +1030,22 @@ Section Proposition_10.
     auto.
   Qed.
 
-
-  Lemma Proposition_10 : 
-    is_trans_path p -> 
-    forall (n:nat), n < length p - 1 -> L p n <> L p (n+1) ->
-      p_node (nd p n) -> 
-      ssuccs (nd p n) (nd p (n+1)) /\ 
-      (DStrand (strand_of (nd p n)) \/ 
-        EStrand (strand_of (nd p n))).
+  Lemma Proposition_10 : p_node (nd p n) -> 
+    ssuccs (nd p n) (nd p (n+1)) /\ 
+    (DStrand (strand_of (nd p n)) \/ EStrand (strand_of (nd p n))).
   Proof.
-    intros. 
+    intro Hpn. 
     assert (Hs : ssuccs (nd p n) (nd p (n + 1)) /\ recv (nd p n) /\ xmit (nd p (n+1))).
     apply trans_path_ssuccs; auto.
-    unfold is_trans_path in H.
-    destruct H as (Ha, Hb).
+    unfold is_trans_path in Htp.
+    destruct Htp as (Ha, Hb).
     split.
     apply Hs.
     
     assert (Hp : PenetratorStrand (strand_of (nd p n))).
     apply (P_node_strand (nd p n)); auto.
-    unfold PenetratorStrand in Hp.
-    destruct Hp as [Hp1 | [Hp2 | [Hp3 | [Hp4 | [Hp5 |Hp6 ]]]]].
-    apply False_ind. apply (MStrand_not_edge (strand_of (nd p n))).
+    elim Hp.
+    intro. apply False_ind. apply (MStrand_not_edge (strand_of (nd p n))).
     auto.
     exists (nd p n).
     exists (nd p (n+1)).
@@ -1041,7 +1053,7 @@ Section Proposition_10.
     split. symmetry. apply ssuccs_same_strand. apply Hs.
     apply Hs.
 
-    apply False_ind. apply (KStrand_not_edge (strand_of (nd p n))).
+    intro. apply False_ind. apply (KStrand_not_edge (strand_of (nd p n))).
     auto.
     exists (nd p n).
     exists (nd p (n+1)).
@@ -1049,7 +1061,7 @@ Section Proposition_10.
     split. symmetry. apply ssuccs_same_strand; apply Hs.
     apply Hs.
 
-    apply False_ind. apply (CStrand_not (strand_of (nd p n))).
+    intro. apply False_ind. apply (CStrand_not (strand_of (nd p n))).
     auto.
     exists (nd p n).
     exists (nd p (n+1)).
@@ -1061,7 +1073,7 @@ Section Proposition_10.
     split. apply Hb with (n:= n+1). omega.
     auto.
 
-    apply False_ind. apply (SStrand_not (strand_of (nd p n))).
+    intro. apply False_ind. apply (SStrand_not (strand_of (nd p n))).
     auto.
     exists (nd p n).
     exists (nd p (n+1)).

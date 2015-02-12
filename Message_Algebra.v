@@ -445,7 +445,6 @@ Inductive k_ingred : relation msg :=
      k_ingred t0 t1 -> k_ingred t0 (E t1 k).
 Hint Constructors k_ingred.
 End K_relation.
-Check k_ingred.
 Variable A : Set.
 Variable B : A -> Key.
 Variable m1 m2 : msg.
