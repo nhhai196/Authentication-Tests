@@ -112,6 +112,12 @@ Definition smsg_2_msg (m : smsg) : msg :=
    | (recv_msg  x) => x
    end.
 
+Definition eq_smsg_dec : forall (x y : smsg), {x=y} + {x<>y}.
+Proof.
+intros.
+decide equality.
+Qed.
+
 (** ** Atomic messages *)
 Inductive atomic : msg -> Prop := 
   |atomic_text : forall t, atomic (T t)
