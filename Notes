@@ -37,3 +37,7 @@ You have to decide whether you prefer the short or the long form (you need to
 be consistent). The Program vernacular is often useful when working with weak sums. 
 
 3. Variable VS Parameter?
+
+4. How to fomalize a fintie list, a finite sequence of nodes in coq? 
+
+5. Assunption about normal bundle: proposition 8.

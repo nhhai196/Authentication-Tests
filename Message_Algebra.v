@@ -72,6 +72,9 @@ Parameter K_p : set Key.
 (** ** Inverse relation for keys *)
 Variable inv : relation Key.
 
+(** ** Inv is commutative *)
+Axiom inv_comm : forall k k', inv k k' -> inv k' k.
+
 (** ** Decidable equality for keys *)
 Variable eq_key_dec : forall (x y:Key), {x=y} + {x<>y}.
 Hint Resolve eq_key_dec.
@@ -285,7 +288,7 @@ Hint Resolve zero_lt_size.
 
 Lemma size_lt_plus_l : forall x y, size x < size x + size y.
 Proof.
-intros x y. 
+intros x y.
 assert (size x + 0 < size x  + size y).
 apply plus_lt_compat_l. apply zero_lt_size.
 rewrite (plus_comm (size x) 0) in H.
