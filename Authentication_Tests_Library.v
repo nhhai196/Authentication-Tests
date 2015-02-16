@@ -109,7 +109,7 @@ Section Proposition_10.
   Hypothesis Hn : n < length p - 1.
   Hypothesis Hcom : L p n <> L p (n+1).
 
-  Lemma ssuccs_eq : 
+(*  Lemma ssuccs_eq : 
     forall x y z, ssuccs x y -> ssuccseq y z -> ssuccs x z.
   Admitted.
 
@@ -130,7 +130,7 @@ Section Proposition_10.
     auto.
     auto.
   Qed.
-(*
+
   Lemma Proposition_10 : p_node (nd p n) -> ssuccs (nd p n) (nd p (n+1)) /\ 
     (DStrand (strand_of (nd p n)) \/ EStrand (strand_of (nd p n))).
   Proof.

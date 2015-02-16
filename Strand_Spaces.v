@@ -364,7 +364,7 @@ Section Trans_path.
           ssuccs (nd n) m /\ ssuccseq m (nd (n+1)))))).
 
 End Trans_path.
-Print L.
+
 (*********************************************************************)
 
 Parameter default_smsg : smsg.
