@@ -167,7 +167,7 @@ Qed.
 Lemma ssucc_prec:
   forall x y, (ssucc x y) -> (prec x y).
 Proof.
-  intros. constructor. apply edge_double. auto.
+  intros. constructor. apply strand_edge_double. auto.
 Qed.
 
 
