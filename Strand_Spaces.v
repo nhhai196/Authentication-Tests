@@ -149,6 +149,7 @@ Hint Constructors strand_edge.
 
 (** Transitive closure of edge *)
 Definition prec := clos_trans node strand_edge.
+Notation "x ==>* y" := (ssuccseq x y) (at level 0, right associativity) : ss_scope.
 
 (*********************************************************************)
 
@@ -181,7 +182,7 @@ Section PenetratorStrand.
   | P_K : forall k : Key, set_In k K_p -> s = [+ (K k)] -> KStrand s.
   Hint Constructors KStrand.
 
-  (** Concatenation Strand *)
+  (** ** Concatenation Strand *)
   Inductive CStrand (s : strand) : Prop := 
   | P_C : forall (g h : msg), s = [- g; - h; + (P g h)] -> CStrand s.
   Hint Constructors CStrand.
@@ -352,16 +353,16 @@ Section Trans_path.
   Definition nd (n:nat) := nth_node n ln.
   Hint Resolve nd.
 
-  Definition transformed_edge (x y : node): Prop :=
-    ssuccs x y /\ exists z, xmit z /\ ssuccs x z /\ ssuccseq z y. 
+  Definition transformed_edge (x y : node) (Lx Ly : msg) :Prop :=
+    ssuccs x y /\ 
+    exists z, xmit z /\ ssuccs x z /\ ssuccseq z y /\ new_at Ly z.
 
   Definition is_trans_path : Prop := 
-    (is_path ln \/ (ssuccs (nd 0) (nd 1) /\  xmit (nd 0) /\ xmit (nd 1) /\ is_path (tl ln))) /\
+    (is_path ln \/ (ssuccs (nd 0) (nd 1) /\  xmit (nd 0) /\
+                    xmit (nd 1) /\ is_path (tl ln))) /\
     forall (n:nat), (n < length p -> (L n) <[node] (nd n)) /\
-      (n < length p - 1 -> (L n = L (n+1) \/ (L n <> L (n+1) -> 
-        recv (nd n) /\ xmit (nd (n+1)) /\ ssuccs (nd n) (nd (n+1)) /\
-        (exists m, xmit m /\ new_at (L (n+1)) m  /\ 
-          ssuccs (nd n) m /\ ssuccseq m (nd (n+1)))))).
+                    (n < length p - 1 -> (L n = L (n+1) \/ (L n <> L (n+1) -> 
+                    transformed_edge (nd n) (nd (n+1)) (L n) (L (n+1))))). 
 
 End Trans_path.
 
@@ -428,37 +429,6 @@ Proof.
   apply H. exists n'.
   split; auto.
 Qed.
-
-(** ** Basic results about penetrator strands related to components *)
-(* A MStrand or KStrand cannot have an edge *)
-Lemma MStrand_not_edge :
-  forall (s:strand), MStrand s -> ~ exists (n1 n2 : node),
-    strand_of n1 = s /\ strand_of n2 = s /\ ssuccs n1 n2.
-Proof.
-intros s Hm Hex.
-destruct Hex as (n1, (n2, (Hs1, (Hs2, Hss)))). 
-inversion Hm.
-assert (Hin1 : set_In (smsg_of n1) s). apply smsg_on_strand. auto.
-assert (Hin2 : set_In (smsg_of n2) s). apply smsg_on_strand. auto.
-rewrite H in Hin1, Hin2. elim Hin1.
-intro. elim Hin2.
-Admitted.
-Axiom KStrand_not_edge :
-  forall (s:strand), KStrand s -> ~ exists (n1 n2 : node),
-    strand_of n1 = s /\ strand_of n2 = s /\ ssuccs n1 n2.  
-
-Axiom CStrand_not : 
-  forall (s:strand), CStrand s -> ~ exists (n1 n2 : node), 
-    strand_of n1 = s /\ strand_of n2 = s /\
-    recv n1 /\ xmit n2 /\ ssuccs n1 n2 /\
-    exists L1 L2, L1 <[node] n1 /\ L2 <[node] n2 /\ L1 <> L2.
-
-Axiom SStrand_not : 
-  forall (s:strand), SStrand s -> ~ exists (n1 n2 : node), 
-    strand_of n1 = s /\ strand_of n2 = s /\
-    recv n1 /\ xmit n2 /\ ssuccs n1 n2 /\
-    exists L1 L2, L1 <[node] n1 /\ L2 <[node] n2 /\ L1 <> L2.
-
 
 
 (*********************************************************************)

@@ -114,6 +114,7 @@ Definition smsg_2_msg (m : smsg) : msg :=
    | (xmit_msg x) => x
    | (recv_msg  x) => x
    end.
+Hint Resolve smsg_2_msg.
 
 Definition eq_smsg_dec : forall (x y : smsg), {x=y} + {x<>y}.
 Proof.

@@ -9,6 +9,16 @@ Require Import Classical.
 
 Import ListNotations.
 
+Lemma smsg_2_msg_xmit : forall n m, smsg_of n = +m -> msg_of n = m.
+Proof.
+intros. unfold msg_of. rewrite H. auto.
+Qed.
+
+Lemma smsg_2_msg_recv : forall n m, smsg_of n = -m -> msg_of n = m.
+Proof.
+intros. unfold msg_of. rewrite H. auto.
+Qed.
+
 Lemma nth_error_some_In {X:Type}: forall l i (x:X),
 nth_error l i = Some x ->
 List.In x l.
@@ -73,10 +83,33 @@ intros. left. exists m. auto.
 intros. right. exists m. auto.
 Qed.
 
+
+Lemma ssucc_index_lt :
+  forall x y, ssucc x y -> index_of x < index_of y.
+Proof.
+intros x y Sxy.
+inversion Sxy. omega.
+Qed.
+
+Lemma ssuccs_index_lt :
+  forall x y, ssuccs x y -> index_of x < index_of y.
+Proof.
+intros x y Sxy.
+induction Sxy. apply ssucc_index_lt. auto.
+omega.
+Qed.
+
 (** strand-successor is irreflexive %\\% *)
-Lemma ssucc_not_ref: forall (n:node),  ssucc n n -> False.
+Lemma ssucc_acyclic: forall (n:node),  ssucc n n -> False.
 Proof.
 intros n Hs. inversion Hs. destruct H. omega.
+Qed.
+
+Lemma ssuccs_acyclic : forall (n:node), ssuccs n n -> False.
+Proof.
+intros n Snn.
+assert (index_of n < index_of n). apply ssuccs_index_lt.
+auto. omega.
 Qed.
 
 (* TODO : move to right place *)
@@ -87,7 +120,6 @@ Proof.
   simpl in eq_index, eq_strand. subst.
   rewrite (proof_irrelevance (lt yn (length ys)) xp yp). reflexivity.
 Qed.
-
 
 Lemma node_smsg_msg_xmit : forall n t,
 smsg_of(n) = (+ t) ->
@@ -346,6 +378,66 @@ Qed.
     intro Sh. assert (Mn1 : msg_of n1 = h). unfold msg_of. rewrite Sh; auto.
     apply (enc_not_ingred_comp_l h k). rewrite Mn1, Mn2 in Hingred. auto.
   Qed.
+
+(** ** Basic results about penetrator strands related to components *)
+(* A MStrand or KStrand cannot have an edge *)
+Lemma strand_1_node_index_0 : 
+  forall x s, strand_of x  = [s] -> index_of x = 0.
+Proof.
+intros [[xs xn] xp] s Snx. simpl in *.
+rewrite Snx in xp. simpl in xp. omega.
+Qed.
+
+Lemma MStrand_not_edge :
+  forall (s:strand), MStrand s -> ~ exists (x y : node),
+    strand_of x = s /\ strand_of y = s /\ ssuccs x y.
+Proof.
+intros s Ms (x ,(y, (Sx,(Sy, Sxy)))).
+inversion Ms.
+apply ssuccs_acyclic with (n:=x).
+assert (Heq : x=y). apply eq_nodes.
+congruence. assert (index_of x = 0).
+apply strand_1_node_index_0 with (s := +T t). congruence.
+assert (index_of y = 0).
+apply strand_1_node_index_0 with (s := +T t). congruence.
+congruence. congruence.
+Qed.
+
+Lemma KStrand_not_edge :
+  forall (s:strand), KStrand s -> ~ exists (n1 n2 : node),
+    strand_of n1 = s /\ strand_of n2 = s /\ ssuccs n1 n2.
+Proof.
+intros s Ms (x ,(y, (Sx,(Sy, Sxy)))).
+inversion Ms.
+apply ssuccs_acyclic with (n:=x).
+assert (Heq : x=y). apply eq_nodes.
+congruence. assert (index_of x = 0).
+apply strand_1_node_index_0 with (s := +K k). congruence.
+assert (index_of y = 0).
+apply strand_1_node_index_0 with (s := +K k). congruence.
+congruence. congruence.
+Qed.  
+
+Lemma CStrand_not_edge : 
+  forall (s:strand), CStrand s -> ~ exists (x y : node) (Lx Ly :msg), 
+    strand_of x = s /\ strand_of y = s /\
+    recv x /\ xmit y /\ transformed_edge x y Lx Ly.
+Proof.
+intros s Cs (x,(y,(Lx,(Ly,(Sx,(Sy,(Rx,(Xy,(Sxy,(z,(Xz,(Sxz,(Szy, NLyz))))))))))))).
+inversion Cs.
+assert (P1 : msg_of y = P g h). apply smsg_2_msg_xmit. 
+apply strand_3_nodes_nnp_xmit with (x:=g) (y:=h). congruence. auto.
+assert (P2 : smsg_of x = -g \/ smsg_of x = -h).
+apply strand_3_nodes_nnp_recv with (z:= P g h); auto. congruence.
+case P2.
+intro.
+Admitted.
+
+Axiom SStrand_not_edge : 
+forall (s:strand), SStrand s -> ~ exists (x y : node) (Lx Ly :msg), 
+    strand_of x = s /\ strand_of y = s /\
+    recv x /\ xmit y /\ transformed_edge x y Lx Ly.
+
 
 (* (** ** Baby results about xmit and recv *)
 

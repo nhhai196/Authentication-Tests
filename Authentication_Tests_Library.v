@@ -108,39 +108,34 @@ Section Proposition_10.
   Hypothesis Htp : is_trans_path p.
   Hypothesis Hn : n < length p - 1.
   Hypothesis Hcom : L p n <> L p (n+1).
+  Hypothesis Pnode : p_node (nd p n).
 
-(*  Lemma ssuccs_eq : 
+  Lemma ssuccs_eq : 
     forall x y z, ssuccs x y -> ssuccseq y z -> ssuccs x z.
   Admitted.
 
   Lemma trans_path_ssuccs : 
-      ssuccs (nd p n) (nd p (n+1)) /\ recv (nd p n) /\ xmit (nd p (n+1)). 
+      ssuccs (nd p n) (nd p (n+1)). 
   Proof.
-    unfold is_trans_path in Htp.
-    destruct Htp as ((H3,H4),H5).
-    remember (H5 n) as H6.
-    destruct H6 as (H61, H62).
-    remember (H62 Hn) as H7.
-    case H7.
-    intros. apply False_ind. apply Hcom. auto.
-    intros. remember (H Hcom) as H8.
-    destruct H8 as (Hrec, (Hxmit, (Hss, (m, (H9, (H10, (H11, H12))))))).
-    repeat split.
+    destruct Htp as (H3,H4).
+    destruct (H4 n)as (H41, H42).
+    destruct H42. auto.
+      apply False_ind. apply Hcom. auto.
+    destruct H. auto.
+    destruct H0 as (m,(Hxmit,(Hnew,(Hssuc,Hsseq)))).
     apply ssuccs_eq with (y:= m); auto.
-    auto.
-    auto.
   Qed.
 
-  Lemma Proposition_10 : p_node (nd p n) -> ssuccs (nd p n) (nd p (n+1)) /\ 
+  Lemma Prop10_recv_xmit : recv (nd p n) /\ xmit (nd p (n+1)).
+  Admitted.
+
+  Lemma Proposition_10 :  ssuccs (nd p n) (nd p (n+1)) /\ 
     (DStrand (strand_of (nd p n)) \/ EStrand (strand_of (nd p n))).
   Proof.
-    intro Hpn. 
-    assert (Hs : ssuccs (nd p n) (nd p (n + 1)) /\ recv (nd p n) /\ xmit (nd p (n+1))).
-    apply trans_path_ssuccs; auto.
-    unfold is_trans_path in Htp.
     destruct Htp as (Ha, Hb).
+    destruct (Hb n) as (Q1,Q2).
     split.
-    apply Hs.
+      apply trans_path_ssuccs.
     
     assert (Hp : PenetratorStrand (strand_of (nd p n))).
     apply (P_node_strand (nd p n)); auto.
@@ -150,43 +145,39 @@ Section Proposition_10.
     exists (nd p n).
     exists (nd p (n+1)).
     split. auto.
-    split. symmetry. apply ssuccs_same_strand. apply Hs.
-    apply Hs.
+    split. symmetry. apply ssuccs_same_strand. apply trans_path_ssuccs.
+    apply trans_path_ssuccs.
 
     intro. apply False_ind. apply (KStrand_not_edge (strand_of (nd p n))).
     auto.
     exists (nd p n).
     exists (nd p (n+1)).
     split. auto.
-    split. symmetry. apply ssuccs_same_strand; apply Hs.
-    apply Hs.
+    split. symmetry. apply ssuccs_same_strand; apply trans_path_ssuccs.
+    apply trans_path_ssuccs.
 
-    intro. apply False_ind. apply (CStrand_not (strand_of (nd p n))).
+    intro. apply False_ind. apply (CStrand_not_edge (strand_of (nd p n))).
     auto.
-    exists (nd p n).
-    exists (nd p (n+1)).
+    exists (nd p n). exists (nd p (n+1)). exists (L p n). exists (L p (n+1)).
     split. auto.
-    split. symmetry. apply ssuccs_same_strand. apply Hs.
-    repeat split. apply Hs. apply Hs. apply Hs.
-    exists (L p n). exists (L p (n+1)).
-    split. apply Hb. omega.
-    split. apply Hb with (n:= n+1). omega.
+    split. symmetry. apply ssuccs_same_strand. apply trans_path_ssuccs.
+    split. apply Prop10_recv_xmit.
+    split. apply Prop10_recv_xmit.
+    case (Q2 Hn). intro. apply False_ind. apply Hcom. auto.
+    intro. apply (H0 Hcom).
+    
+    intro. apply False_ind. apply (SStrand_not_edge (strand_of (nd p n))).
     auto.
-
-    intro. apply False_ind. apply (SStrand_not (strand_of (nd p n))).
-    auto.
-    exists (nd p n).
-    exists (nd p (n+1)).
+    exists (nd p n). exists (nd p (n+1)). exists (L p n). exists (L p (n+1)).
     split. auto.
-    split. symmetry. apply ssuccs_same_strand. apply Hs.
-    repeat split. apply Hs. apply Hs. apply Hs.
-    exists (L p n). exists (L p (n+1)).
-    split. apply Hb. omega.
-    split. apply Hb with (n:= n+1). omega.
-    auto.
+    split. symmetry. apply ssuccs_same_strand. apply trans_path_ssuccs.
+    split. apply Prop10_recv_xmit.
+    split. apply Prop10_recv_xmit.
+    case (Q2 Hn). intro. apply False_ind. apply Hcom. auto.
+    intro. apply (H0 Hcom).
 
     auto.
     auto.
   Qed.
-*)
+
 End Proposition_10.
