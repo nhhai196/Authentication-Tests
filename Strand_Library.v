@@ -1,7 +1,7 @@
 
 (* This file contains all basic results for strand spaces which will be used when proving *)
 
-Require Import Lists.List Omega.
+Require Import Lists.List Omega Ring.
 Require Import Strand_Spaces Message_Algebra.
 Require Import ProofIrrelevance.
 Require Import Relation_Definitions Relation_Operators.
@@ -728,3 +728,55 @@ Qed.
   Qed.
 
 End IngredientsOriginate.
+
+Lemma list_nth_app_left : 
+  forall (A:Type) (default : A) (p q: list A) (n:nat), n < length p -> 
+  nth_default default (p++q) n = nth_default default p n.
+Proof.
+intros A d p.
+induction p.
+intros q n llt. simpl in *. omega.
+intros q n llt. destruct n. admit.
+simpl.
+Admitted.
+
+Lemma list_nth_app_right : 
+  forall (A:Type) (default : A) (p q : list A) (n:nat), 
+    n >= length p -> n < length (p++q) -> 
+    nth_default default (p++q) n = nth_default default q (n - length p).
+Proof.
+intros A d p.
+induction p. intros q n lgt llt. simpl. rewrite <-(minus_n_O n). auto.
+intros q n lgt llt.
+destruct n. inversion lgt. simpl. apply IHp. 
+inversion lgt; auto. subst. simpl in H0. omega.
+inversion llt. auto. omega.
+Qed.
+
+Lemma path_nth_app_left : 
+  forall p q n, n < length p -> nth_node n (p++q) = nth_node n p.
+Proof.
+intros p q n. apply list_nth_app_left.
+Qed. 
+
+Lemma path_nth_app_right : 
+  forall p q n, n >= length p -> n < length (p++q) -> 
+    nth_node n (p++q) = nth_node (n-length p) q.
+Proof.
+intros p q n. apply list_nth_app_right.
+Qed.
+
+Lemma path_add_tail : 
+  forall (p q : list node) , is_path p -> is_path q -> 
+    path_edge (nth_node (length p - 1) p) (nth_node 0 q) -> is_path (p++q).
+Proof.
+intros p q Pp Pq Pe.
+unfold is_path in *. intros i Hlt. 
+assert ( i < length p - 1 \/ i = length p - 1 \/ i >= length p /\ i < length (p++q) - 1).
+omega. case H.
+intros. repeat rewrite path_nth_app_left. apply Pp. auto. omega. omega.
+intros. case H0. intros. rewrite path_nth_app_left. rewrite path_nth_app_right.
+Admitted. 
+
+
+

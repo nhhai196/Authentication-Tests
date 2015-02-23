@@ -3,6 +3,7 @@
 
 Require Import Strand_Spaces Message_Algebra Strand_Library.
 Require Import Lists.List.
+Import ListNotations.
 
 (** * Proposition 7 *)
 Section P7_1.
@@ -181,3 +182,64 @@ Section Proposition_10.
   Qed.
 
 End Proposition_10.
+
+(*********************************************************************)
+
+Section Proposition_11.
+Section Proposition_11_aux.
+Variable n' : node.
+Variable a t : msg.
+
+Hypothesis Atom : atomic a.
+Hypothesis A_ingred_t : a <st t.
+Hypothesis T_ingred_n' : t <[node] n'.
+
+Lemma single_node_tp : 
+  forall (n:node) (m:msg), 
+    m <[node] n -> is_trans_path [(n,m)].
+Proof.
+  intros n m Hcom.
+  unfold is_trans_path.
+  simpl. split. left. unfold is_path. simpl. intros i Hcontra. 
+  apply False_ind; omega.
+
+  intros n0. split. intro Hn0. assert (n0=0). omega. rewrite H. 
+  assert ( L [(n,m)] 0 = m). auto.
+  assert (nd [(n,m)] 0 = n). auto. congruence.
+
+  intros n1.
+  apply False_ind. omega.
+Qed.
+
+Definition Proposition_11_aux (n':node): Prop := 
+  forall (a t : msg), atomic a -> a <st t -> t <[node] n' ->
+  exists p, let ln := fst (split p) in 
+            let lm := snd (split p) in 
+            is_trans_path p /\ 
+            orig_at (nth_node 0 ln) a /\
+            nth_node (length p - 1) ln = n' /\ 
+            nth_msg (length p -1) lm = t /\
+            forall (i:nat), i < length p -> a <st (nth_msg i lm).
+End Proposition_11_aux.
+Check Proposition_11_aux.
+
+Lemma Prop_11 : forall (n' : node), Proposition_11_aux n'.
+Proof.
+apply well_founded_ind with (R:=prec).
+exact wf_prec.
+  intros x IH. unfold Proposition_11_aux in *.                                  
+  intros a t Sat Atoma Stx.
+  assert (Orig : orig_at x a \/ ~ orig_at x a). tauto.
+  case Orig.
+  intros Oxa. exists ([(x, t)]). simpl. split.
+  apply single_node_tp with (n:=x) (m:=t). auto.
+  split; auto. split; auto. split; auto.
+  intros. assert (i=0). omega. rewrite H0;auto.
+
+  intro NOrig. case (xmit_or_recv x).
+  Focus 2. intro Recvx. assert (exists y, msg_deliver y x).
+  apply was_sent; auto.
+Admitted.
+
+
+End Proposition_11.

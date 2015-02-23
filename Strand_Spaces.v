@@ -362,8 +362,7 @@ Section Trans_path.
                     xmit (nd 1) /\ is_path (tl ln))) /\
     forall (n:nat), (n < length p -> (L n) <[node] (nd n)) /\
                     (n < length p - 1 -> (L n = L (n+1) \/ (L n <> L (n+1) -> 
-                    transformed_edge (nd n) (nd (n+1)) (L n) (L (n+1))))). 
-
+                    transformed_edge (nd n) (nd (n+1)) (L n) (L (n+1))))).
 End Trans_path.
 
 (*********************************************************************)
@@ -447,20 +446,7 @@ Variable default_msg : msg.
 (* Baby result : a single pair (n, L) is a trans-foramtion path *)
 Open Scope list_scope.
 Check [1].
-Lemma anode_trans_path : 
-  forall (n:node) (t:msg), 
-    t <[node] n -> is_trans_path [(n,t)].
-Proof.
-  intros n t Hcom.
-  unfold is_trans_path.
-  simpl. split.
-  split. constructor. simpl in H.
-  apply False_ind; omega.
-  left; auto.
-  intros n1; split.
-  intro Hn1_lt. assert (n1=0). omega. subst. apply Hcom.
-  intros Hn1_lt. apply False_ind. omega.
-Qed.
+
 
 (*********************************************************************)
 
