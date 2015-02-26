@@ -1,11 +1,11 @@
 
 (* This file contains all basic results for strand spaces which will be used when proving *)
 
-Require Import Lists.List Omega Ring.
+Require Import Lists.List Omega Ring ZArith.
 Require Import Strand_Spaces Message_Algebra.
-Require Import ProofIrrelevance.
+Require Import ProofIrrelevance Classical.
 Require Import Relation_Definitions Relation_Operators.
-Require Import Classical.
+Require Import List_Library.
 
 Import ListNotations.
 
@@ -729,30 +729,6 @@ Qed.
 
 End IngredientsOriginate.
 
-Lemma list_nth_app_left : 
-  forall (A:Type) (default : A) (p q: list A) (n:nat), n < length p -> 
-  nth_default default (p++q) n = nth_default default p n.
-Proof.
-intros A d p.
-induction p.
-intros q n llt. simpl in *. omega.
-intros q n llt. destruct n. admit.
-simpl.
-Admitted.
-
-Lemma list_nth_app_right : 
-  forall (A:Type) (default : A) (p q : list A) (n:nat), 
-    n >= length p -> n < length (p++q) -> 
-    nth_default default (p++q) n = nth_default default q (n - length p).
-Proof.
-intros A d p.
-induction p. intros q n lgt llt. simpl. rewrite <-(minus_n_O n). auto.
-intros q n lgt llt.
-destruct n. inversion lgt. simpl. apply IHp. 
-inversion lgt; auto. subst. simpl in H0. omega.
-inversion llt. auto. omega.
-Qed.
-
 Lemma path_nth_app_left : 
   forall p q n, n < length p -> nth_node n (p++q) = nth_node n p.
 Proof.
@@ -766,17 +742,277 @@ Proof.
 intros p q n. apply list_nth_app_right.
 Qed.
 
-Lemma path_add_tail : 
-  forall (p q : list node) , is_path p -> is_path q -> 
-    path_edge (nth_node (length p - 1) p) (nth_node 0 q) -> is_path (p++q).
+Lemma length_zero_nil : forall (p : list node), length p = 0 -> p = [].
 Proof.
-intros p q Pp Pq Pe.
-unfold is_path in *. intros i Hlt. 
-assert ( i < length p - 1 \/ i = length p - 1 \/ i >= length p /\ i < length (p++q) - 1).
+intros. induction p. auto. simpl in H. omega.
+Qed.
+
+Lemma path_extend : 
+  forall (p : list node) (n:node) , is_path p -> 
+    path_edge (nth_node (length p - 1) p) n -> is_path (p++[n]).
+Proof.
+intros p n Pp Pe.
+unfold is_path in *. intros i Hlt.
+rewrite app_length in Hlt. simpl in *. 
+assert ( i < length p - 1 \/ i = length p - 1).
 omega. case H.
 intros. repeat rewrite path_nth_app_left. apply Pp. auto. omega. omega.
-intros. case H0. intros. rewrite path_nth_app_left. rewrite path_nth_app_right.
-Admitted. 
+intros. 
+  assert (length p = 0 \/ length p > 0). omega.
+  case H1. intros. rewrite (length_zero_nil p). rewrite app_nil_l. assert (i=0).
+  omega. rewrite H3. simpl. omega. auto.
+  intros. assert (i+1=length p). omega. 
+  rewrite path_nth_app_left. rewrite path_nth_app_right. rewrite H3.
+  rewrite H0. rewrite minus_diag. apply Pe. omega. rewrite app_length.
+  simpl. omega. omega.
+Qed.
 
+Section Prop_11.
+  Variable a : msg.
+  Variable n : node.
+  Definition P_ingred : node -> Prop:=
+    fun (n':node) => ssuccs n' n /\ ingred a (msg_of n').
 
+  Lemma ingred_of_earlier : 
+    forall (n':node), 
+      a <st (msg_of n) -> xmit n -> ~ orig_at n a -> exists n', P_ingred n'.
+  Proof.
+    intros n' Hst Hxmit Hnorig.
+    apply Peirce.
+    intros.
+    apply False_ind.
+    apply Hnorig. unfold orig_at.
+    repeat split.
+    auto. 
+    auto.
+    intros n1 Hssuc Hastn1. apply H.
+    exists n1. split; auto.
+  Qed.
+
+  Lemma not_orig_exists : 
+    a <st (msg_of n) -> xmit n -> ~ orig_at n a -> has_min_elt P_ingred.
+  Proof.
+    intros Hxmit Hst Hnorig.
+    apply always_min_elt.
+    apply ingred_of_earlier; assumption.
+  Qed.
+  Hint Resolve not_orig_exists.
+End Prop_11.
+
+(** For every atomic ingredient of a message, there exists 
+a component of the message so that the atomic value is 
+an ingredient of that component *)
+Lemma ingred_exists_comp: 
+  forall m a, atomic a -> a <st m -> exists L, a <st L /\ comp L m.
+Proof.
+  intros m a Hatom Hingred.
+  induction m.
+  exists a; split.
+  constructor.
+  assert (a = T t). apply atomic_ingred_eq; auto. 
+  subst. apply comp_atomic_cyclic; assumption.
+
+  exists a; split.
+  constructor.
+  assert (a = K k). apply atomic_ingred_eq; auto.
+  subst. apply comp_atomic_cyclic; assumption.
+
+  assert (Hor : ingred a m1 \/ ingred a m2).
+  apply ingred_pair. inversion Hatom; discriminate.
+  assumption.
+  case Hor.
+  intro Hst.
+  assert (Hex : exists L : msg, ingred a L /\ comp L m1).
+  exact (IHm1 Hst). destruct Hex as (L, (HaL, Hcom)).
+  exists L; split.
+  assumption.
+  apply preserve_comp_l; assumption.
+
+  intros Hst.
+  assert (Hex : exists L : msg, ingred a L /\ comp L m2).
+  exact (IHm2 Hst). destruct Hex as (L, (HaL, Hcom)).
+  exists L; split.
+  assumption.
+  apply preserve_comp_r; assumption.
+
+  assert (Hex : exists L : msg, a <st L /\ L <com m).
+  apply IHm. apply ingred_enc with (k:=k).
+  inversion Hatom; discriminate.
+  assumption.
+  destruct Hex as (L, (HaL, Hcom)).
+  exists (E m k); split.
+  assumption.
+  apply comp_simple_cyclic.
+  apply simple_step. unfold not. intros Hpair.
+  inversion Hpair.
+Qed.
+
+Lemma ingred_exists_comp_of_node: 
+  forall (n:node) (a:msg), atomic a -> a <st (msg_of n) 
+    -> exists L, a <st L /\ L <[node] n.
+Proof.
+  intros.
+  apply ingred_exists_comp; assumption.
+Qed.
+
+Lemma msg_deliver_comp : 
+  forall (n1 n2:node) (m:msg),
+    msg_deliver n1 n2 /\ 
+    comp_of_node m n2 -> comp_of_node m n1.
+Proof.
+  intros.
+  destruct H as (H1,H2).
+  unfold comp_of_node.
+  assert (msg_of n1 = msg_of n2).
+  apply msg_deliver_msg_eq. auto.
+  rewrite H.
+  unfold comp_of_node in H2. auto.
+Qed.
+Hint Resolve msg_deliver_comp.
+
+Lemma comp_of_node_imp_ingred : 
+  forall (m:msg) (n:node), m <[node] n -> m <st (msg_of n).
+Proof.
+  intros.
+  unfold comp_of_node in H.
+  apply comp_imp_ingred.
+  assumption.
+Qed.
+
+Lemma new_at_imp_comp : forall m n, new_at m n -> m <[node] n.
+Proof.
+  intros m n H.
+  unfold new_at in H.
+  apply H.
+Qed.
+
+Lemma not_new_exists : 
+  forall n L, L <[node] n -> ~ new_at L n ->
+    exists n', ssuccs n' n /\ L <[node] n'.
+Proof.
+  unfold not.
+  intros n L Hcom Hnnew.
+  apply Peirce. intros.
+  apply False_ind. apply Hnnew.
+  unfold new_at. split.
+  assumption.
+  intros n' Hssucc Hcomn'.
+  apply H. exists n'.
+  split; auto.
+Qed.
+
+(** Backward construction *)
+Lemma backward_construction : 
+  forall (n:node) (a L:msg), 
+    atomic a -> L <[node] n -> ~ orig_at n a -> a <st L ->
+    exists (n':node) (L':msg), 
+      (msg_deliver n' n \/ ssuccs n' n) /\ a <st L' /\ L' <[node] n' /\ 
+      (L' = L \/ (ssuccs n' n /\ new_at L n)).
+Proof.
+  intros n a L Hatom Hcom Hnorig Hst.
+  case (xmit_or_recv n).
+  Focus 2. intros Hrecv.
+  assert (Hex : exists (n':node), msg_deliver n' n). 
+  apply was_sent. auto.
+  destruct Hex as (n', Hmsg_deli).
+  exists n'; exists L. 
+  split. left; auto.
+  split. exact Hst.
+  split. apply msg_deliver_comp with (n1:=n') (n2:=n).
+  split; assumption.
+  left. trivial.  
+
+  intros Hxmit.
+  assert (Hdec : new_at L n \/ ~(new_at L n)). tauto.
+  case Hdec.
+  intros Hnew. 
+  assert (Hex2 :exists n1, ssuccs n1 n /\ ingred a (msg_of n1)).
+  apply ingred_of_earlier. repeat split; auto.
+  apply ingred_trans with (y:=L).
+  assumption.
+  apply comp_of_node_imp_ingred; assumption.
+  assumption.
+  assumption.
+  destruct Hex2 as (n1, (Hssucc, Hastn1)).
+  assert (HexL1 : exists L1, ingred a L1 /\ comp_of_node L1 n1).
+  apply ingred_exists_comp_of_node; assumption.
+  destruct HexL1 as (L1, (H1, H2)).
+  exists n1; exists L1.
+  split. right. assumption.
+  split. assumption.
+  split. assumption.
+  right. split; auto.
+
+  intros Hnnew.
+  assert (Hex : exists n', ssuccs n' n /\ L <[node] n').
+  apply not_new_exists; auto.
+  destruct Hex as (n', (Hssucc, Hn)).
+  exists n'; exists L.
+  split. right. auto.
+  split. auto.
+  split. assumption.
+  left; trivial.
+Qed.
+
+Section back_ward.
+(*  Variable a L: msg.
+  Variable n : node.
+Lemma backward_construction' :  
+    atomic a -> L <[node] n -> ~ orig_at n a -> a <st L ->
+    exists (n':node) (L':msg), 
+      (a <st L' /\ L' <[node] n' /\ (L' = L \/ (L'<>L -> transformed_edge n' n L' L))) /\
+      (xmit n').
+
+Proof.
+  intros Hatom Hcom Hnorig Hst.
+  case (xmit_or_recv n).
+  Focus 2. intros Hrecv.
+  assert (Hex : exists (n':node), msg_deliver n' n). 
+  apply was_sent. auto.
+  destruct Hex as (n', Hmsg_deli).
+  exists n'; exists L. 
+  left. split. left; auto.
+  split. exact Hst.
+  split. apply msg_deliver_comp with (n1:=n') (n2:=n).
+  split; assumption.
+  left. trivial.  
+
+  intros Hxmit. Check P_ingred.
+  assert (Hmin : has_min_elt (P_ingred a n)).
+  apply not_orig_exists. admit. auto. auto. destruct Hmin as (n', Hm).
+  destruct Hm. case (xmit_or_recv n').
+  intros.
+  assert (Hdec : new_at L n \/ ~(new_at L n)). tauto. 
+  case Hdec.
+  intros Hnew. 
+  assert (Hex2 :exists n1, ssuccs n1 n /\ ingred a (msg_of n1)).
+  apply ingred_of_earlier. repeat split; auto.
+  apply ingred_trans with (y:=L).
+  assumption.
+  apply comp_of_node_imp_ingred; assumption.
+  assumption.
+  assumption.
+  destruct Hex2 as (n1, (Hssucc, Hastn1)).
+  assert (HexL1 : exists L1, ingred a L1 /\ comp_of_node L1 n1).
+  apply ingred_exists_comp_of_node; assumption.
+  destruct HexL1 as (L1, (H1, H2)).
+  exists n1; exists L1.
+  split. right. assumption.
+  split. assumption.
+  split. assumption.
+  right. split; auto.
+
+  intros Hnnew.
+  assert (Hex : exists n', ssuccs n' n /\ L <[node] n').
+  apply not_new_exists; auto.
+  destruct Hex as (n', (Hssucc, Hn)).
+  exists n'; exists L.
+  split. right. auto.
+  split. auto.
+  split. assumption.
+  left; trivial.
+Qed.
+
+*)
+End back_ward.
 

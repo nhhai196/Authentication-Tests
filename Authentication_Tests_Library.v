@@ -221,7 +221,6 @@ Definition Proposition_11_aux (n':node): Prop :=
             nth_msg (length p -1) lm = t /\
             forall (i:nat), i < length p -> a <st (nth_msg i lm).
 End Proposition_11_aux.
-Check Proposition_11_aux.
 
 Lemma Prop_11 : forall (n' : node), Proposition_11_aux n'.
 Proof.
@@ -238,7 +237,9 @@ exact wf_prec.
 
   intro NOrig. case (xmit_or_recv x).
   Focus 2. intro Recvx. assert (exists y, msg_deliver y x).
-  apply was_sent; auto.
+  apply was_sent; auto. admit.
+
+  intros. 
 Admitted.
 
 

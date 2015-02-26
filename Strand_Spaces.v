@@ -292,6 +292,11 @@ Section Path.
   Definition is_path (p:list node) : Prop := 
     forall i, i < length(p) - 1 -> path_edge (nth_node i p) (nth_node (i+1) p).
 
+  (*Inductive is_path' : list node -> Prop := 
+    | path_nil : forall (p:list node), p = [] -> is_path' p
+    | path_step : forall p n, is_path' p ->  
+      path_edge n (nth_node 0 p) -> is_path' (n::p). *)
+
 (** ** Axiom for paths *)
 (** All paths begin on a positive node and end on a negative node *)
   Axiom path_begin_pos_end_neg : forall (p:list node),
@@ -306,10 +311,23 @@ Section Path.
     p_path p /\ forall i, i < length(p)-1 ->
     ingred (msg_of (nth_node (i+1) p)) (msg_of (nth_node i p)).
 
+  (*Inductive falling_path : list node -> Prop :=
+    | falling_path_nil : forall p, p = [] -> falling_path p
+    | falling_path_step : forall p n, is_path p -> 
+      path_edge (nth_node (length p - 1) p) n ->
+      ingred (msg_of (nth_node (length p - 1) p)) (msg_of n) -> falling_path p.*)
+
+
   Definition rising_path (p : list node) : Prop := 
     p_path p /\ forall i, i < length(p)-1 ->
     ingred (msg_of (nth_node i p)) (msg_of (nth_node (i+1) p)).
 
+  (*Lemma path_imp_path_edge : 
+    forall p, is_path' p -> forall n, n < length p - 1 ->
+    path_edge (nth_node n p) (nth_node (n+1) p).
+  Proof.
+  intros p Pa. inversion Pa. intros. subst. simpl in *. intros. omega.
+  intros. simpl in *. subst. *)
 End Path.
 
 (*********************************************************************)
@@ -382,52 +400,7 @@ Parameter default_smsg : smsg.
 
 
 (*
-Lemma msg_deliver_comp : 
-  forall (n1 n2:node) (m:msg),
-    msg_deliver n1 n2 /\ 
-    comp_of_node m n2 -> comp_of_node m n1.
-Proof.
-  intros.
-  destruct H as (H1,H2).
-  unfold comp_of_node.
-  assert (msg_of n1 = msg_of n2).
-  apply msg_deliver_ax. auto.
-  rewrite H.
-  unfold comp_of_node in H2. auto.
-Qed.
-Hint Resolve msg_deliver_comp.
 
-Lemma comp_of_node_imp_ingred : 
-  forall (m:msg) (n:node), m <[node] n -> m <st (msg_of n).
-Proof.
-  intros.
-  unfold comp_of_node in H.
-  apply comp_imp_ingred.
-  assumption.
-Qed.
-
-
-Lemma new_at_imp_comp : forall m n, new_at m n -> m <[node] n.
-Proof.
-  intros m n H.
-  unfold new_at in H.
-  apply H.
-Qed.
-
-Lemma not_new_exists : 
-  forall n L, L <[node] n -> ~ new_at L n ->
-    exists n', ssuccs n' n /\ L <[node] n'.
-Proof.
-  unfold not.
-  intros n L Hcom Hnnew.
-  apply Peirce. intros.
-  apply False_ind. apply Hnnew.
-  unfold new_at. split.
-  assumption.
-  intros n' Hssucc Hcomn'.
-  apply H. exists n'.
-  split; auto.
-Qed.
 
 
 (*********************************************************************)
@@ -438,77 +411,7 @@ Qed.
 
 (*********************************************************************)
 
-(* I want to define some constant of type msg here but we don't know any constant 
-of this type, so I just say it is some variable *)
-Variable default_msg : msg.
-
-
-(* Baby result : a single pair (n, L) is a trans-foramtion path *)
-Open Scope list_scope.
-Check [1].
-
-
-(*********************************************************************)
-
-
-(*********************************************************************)
-
 (** * Proposition 11 *)
-(** For every atomic ingredient of a message, there exists 
-a component of the message so that the atomic value is 
-an ingredient of that component *)
-Lemma ingred_exists_comp: 
-  forall m a, atomic a -> a <st m -> exists L, a <st L /\ comp L m.
-Proof.
-  intros m a Hatom Hingred.
-  induction m.
-  exists a; split.
-  constructor.
-  assert (a = T t). apply atomic_ingred_eq; auto. 
-  subst. apply comp_atomic_cyclic; assumption.
-
-  exists a; split.
-  constructor.
-  assert (a = K k). apply atomic_ingred_eq; auto.
-  subst. apply comp_atomic_cyclic; assumption.
-
-  assert (Hor : ingred a m1 \/ ingred a m2).
-  apply ingred_pair. inversion Hatom; discriminate.
-  assumption.
-  case Hor.
-  intro Hst.
-  assert (Hex : exists L : msg, ingred a L /\ comp L m1).
-  exact (IHm1 Hst). destruct Hex as (L, (HaL, Hcom)).
-  exists L; split.
-  assumption.
-  apply preserve_comp_l; assumption.
-
-  intros Hst.
-  assert (Hex : exists L : msg, ingred a L /\ comp L m2).
-  exact (IHm2 Hst). destruct Hex as (L, (HaL, Hcom)).
-  exists L; split.
-  assumption.
-  apply preserve_comp_r; assumption.
-
-  assert (Hex : exists L : msg, a <st L /\ L <com m).
-  apply IHm. apply ingred_enc with (k:=k).
-  inversion Hatom; discriminate.
-  assumption.
-  destruct Hex as (L, (HaL, Hcom)).
-  exists (E m k); split.
-  assumption.
-  apply comp_simple_cyclic.
-  apply simple_step. unfold not. intros Hpair.
-  inversion Hpair.
-Qed.
-
-Lemma ingred_exists_comp_of_node: 
-  forall (n:node) (a:msg), atomic a -> a <st (msg_of n) 
-    -> exists L, a <st L /\ L <[node] n.
-Proof.
-  intros.
-  apply ingred_exists_comp; assumption.
-Qed.
 
 Section Proposition11.
   Variable a : msg.

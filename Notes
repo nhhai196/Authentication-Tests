@@ -41,3 +41,5 @@ be consistent). The Program vernacular is often useful when working with weak su
 4. How to fomalize a fintie list, a finite sequence of nodes in coq? 
 
 5. Assunption about normal bundle: proposition 8.
+
+6. Inductive definition vs deductive definition 
