@@ -84,7 +84,8 @@ VFILES:=Authentication_Tests.v\
   Authentication_Tests_Library.v\
   Message_Algebra.v\
   Strand_Library.v\
-  Strand_Spaces.v
+  Strand_Spaces.v\
+  List_Library.v
 
 -include $(addsuffix .d,$(VFILES))
 .SECONDARY: $(addsuffix .d,$(VFILES))
