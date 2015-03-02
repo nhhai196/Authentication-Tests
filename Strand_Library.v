@@ -83,6 +83,14 @@ intros. left. exists m. auto.
 intros. right. exists m. auto.
 Qed.
 
+(* TODO : move to right place *)
+Lemma eq_nodes : forall (x y : node), strand_of(x) = strand_of(y) -> 
+  index_of(x) = index_of(y) -> x = y.
+Proof.
+  intros [[xs xn] xp] [[ys yn] yp] eq_index eq_strand.
+  simpl in eq_index, eq_strand. subst.
+  rewrite (proof_irrelevance (lt yn (length ys)) xp yp). reflexivity.
+Qed.
 
 Lemma ssucc_index_lt :
   forall x y, ssucc x y -> index_of x < index_of y.
@@ -99,6 +107,43 @@ induction Sxy. apply ssucc_index_lt. auto.
 omega.
 Qed.
 
+Lemma ssuccseq_index_lteq :
+  forall x y, ssuccseq x y -> index_of x <= index_of y.
+Proof.
+intros x y Sxy.
+induction Sxy. assert (index_of x < index_of y).
+apply ssucc_index_lt. auto. omega. auto. omega.
+Qed.
+
+Lemma index_lt_one_ssucc :
+  forall x y, strand_of x = strand_of y -> index_of x + 1= index_of y -> ssucc x y.
+Proof. auto. Qed.
+
+Lemma index_lt_ssuccs :
+  forall x y, strand_of x = strand_of y -> index_of x < index_of y -> ssuccs x y.
+Proof. 
+intros x y Sxy lt.
+Admitted.
+
+Lemma ssuccs_imp_ssuccseq :
+  forall x y, ssuccs x y -> ssuccseq x y.
+Proof.
+intros x y Sxy. 
+induction Sxy. apply rt_step. auto.
+apply rt_trans with (y:=y); auto.
+Qed.
+
+Lemma index_lteq_ssuccseq :
+  forall x y, strand_of x = strand_of y -> index_of x <= index_of y -> ssuccseq x y.
+Proof. 
+intros x y Sxy lt.
+assert (index_of x = index_of y \/ index_of x < index_of y). omega.
+case H. intros. assert (x=y). apply eq_nodes; auto.
+rewrite H1. apply rt_refl.
+intros. apply ssuccs_imp_ssuccseq.
+apply index_lt_ssuccs; auto.
+Qed.
+
 (** strand-successor is irreflexive %\\% *)
 Lemma ssucc_acyclic: forall (n:node),  ssucc n n -> False.
 Proof.
@@ -110,15 +155,6 @@ Proof.
 intros n Snn.
 assert (index_of n < index_of n). apply ssuccs_index_lt.
 auto. omega.
-Qed.
-
-(* TODO : move to right place *)
-Lemma eq_nodes : forall (x y : node), strand_of(x) = strand_of(y) -> 
-  index_of(x) = index_of(y) -> x = y.
-Proof.
-  intros [[xs xn] xp] [[ys yn] yp] eq_index eq_strand.
-  simpl in eq_index, eq_strand. subst.
-  rewrite (proof_irrelevance (lt yn (length ys)) xp yp). reflexivity.
 Qed.
 
 Lemma node_smsg_msg_xmit : forall n t,
@@ -167,6 +203,15 @@ Proof.
 Qed.
 Hint Resolve ssuccs_same_strand.
 
+Lemma ssuccseq_same_strand : 
+  forall (x y : node), ssuccseq x y -> strand_of x = strand_of y.
+Proof.
+  intros x y Sxy. 
+  induction Sxy.
+  apply ssucc_same_strand. auto.
+  auto. congruence.
+Qed.
+
 (** ** Baby result about msg_deliver *)
 Lemma msg_deliver_xmit : forall x y, msg_deliver x y -> xmit x.
 Proof.
@@ -210,6 +255,13 @@ Proof.
   induction Sxy.
   apply ssucc_prec; auto.
   apply prec_transitive with (y:=y); auto.
+Qed.
+
+Lemma ssuccs_trans :
+  forall x y z, ssuccs x y -> ssuccs y z -> ssuccs x z.
+Proof.
+intros x y z Sxy Syz.
+apply t_trans with (y:=y); auto.
 Qed.
 
 (** ** Basic Results for Penetrator Strands *)
@@ -773,11 +825,13 @@ Section Prop_11.
   Definition P_ingred : node -> Prop:=
     fun (n':node) => ssuccs n' n /\ ingred a (msg_of n').
 
+  Definition P_comp : node -> Prop :=
+    fun (n':node) => ssuccs n' n /\ a <[node] n'.
+
   Lemma ingred_of_earlier : 
-    forall (n':node), 
       a <st (msg_of n) -> xmit n -> ~ orig_at n a -> exists n', P_ingred n'.
   Proof.
-    intros n' Hst Hxmit Hnorig.
+    intros Hst Hxmit Hnorig.
     apply Peirce.
     intros.
     apply False_ind.
@@ -789,6 +843,15 @@ Section Prop_11.
     exists n1. split; auto.
   Qed.
 
+  Lemma new_at_earlier :
+     a <[node] n -> ~ new_at a n -> exists n', P_comp n'.
+  Proof.
+    intros Can Nan. apply Peirce. intros.
+    apply False_ind. apply Nan. unfold new_at.
+    split; auto. intros. apply H.
+    exists n'. split; auto.
+  Qed.
+
   Lemma not_orig_exists : 
     a <st (msg_of n) -> xmit n -> ~ orig_at n a -> has_min_elt P_ingred.
   Proof.
@@ -797,7 +860,46 @@ Section Prop_11.
     apply ingred_of_earlier; assumption.
   Qed.
   Hint Resolve not_orig_exists.
+
+  Lemma not_new_at_exists :
+    a <[node] n -> ~new_at a n -> has_min_elt P_comp.
+  Proof.
+    intros Can Nan. apply always_min_elt.
+    apply new_at_earlier; auto.
+  Qed.
+
+  Lemma min_xmit_orig : 
+    forall (x:node), xmit x -> is_minimal P_ingred x -> orig_at x a.
+  Proof.
+    intros. unfold orig_at. destruct H0. unfold P_ingred in H0.
+    repeat split. auto. apply H0.
+    intros. apply (H1 n'). apply ssuccs_prec. auto. 
+    unfold P_ingred. split. apply ssuccs_trans with (y:=x).
+    auto. apply H0. auto.
+   Qed.
+
+  Lemma min_new_at : 
+    forall (x:node), is_minimal P_comp x -> new_at a x.
+  Proof.
+    intros. destruct H.
+    split. apply H.
+    intros. apply (H0 n'). apply ssuccs_prec. auto.
+    split. apply ssuccs_trans with (y:=x).
+    auto. apply H. auto.
+  Qed.
+
 End Prop_11.
+
+Lemma msg_deliver_same_comp : 
+  forall x y Ly, msg_deliver x y -> Ly <[node] y -> 
+  exists Lx, Lx <[node] x /\ Lx = Ly.
+Proof.
+  intros x y Ly Mxy Lyy.
+  exists Ly. split. unfold comp_of_node.  
+  assert (msg_of x = msg_of y). 
+  apply msg_deliver_msg_eq. auto.
+  rewrite H. auto. auto.
+Qed.
 
 (** For every atomic ingredient of a message, there exists 
 a component of the message so that the atomic value is 
@@ -886,7 +988,7 @@ Proof.
   apply H.
 Qed.
 
-Lemma not_new_exists : 
+(* Lemma not_new_exists : 
   forall n L, L <[node] n -> ~ new_at L n ->
     exists n', ssuccs n' n /\ L <[node] n'.
 Proof.
@@ -953,35 +1055,153 @@ Proof.
   split. assumption.
   left; trivial.
 Qed.
+*)
+Lemma comp_trans : forall a L n, a <st L -> L <[node] n -> a <st (msg_of n).
+Proof.
+intros a L n aL Ln.
+apply ingred_trans with (y:= L).
+auto. apply comp_of_node_imp_ingred. auto.
+Qed.
+Hint Resolve comp_trans.
+
+Lemma orig_dec : forall n a, orig_at n a \/ ~ orig_at n a.
+Proof. intros; tauto. Qed.
+
+Lemma new_at_dec : forall (n:node) (L:msg) , new_at L n \/ ~new_at L n.
+Proof.
+  intros n L. tauto.
+Qed.
+
+Lemma orig_imp_ingred : forall n a, orig_at n a -> a <st msg_of n.
+Proof.
+intros. apply H.
+Qed.
+
+Lemma not_ssuccseq : 
+  forall (x y : node), ~(x ==>* y) -> strand_of x = strand_of y -> y ==>+ x.
+Proof.
+intros x y N Sxy. apply index_lt_ssuccs. auto. 
+case lt_dec with (m:= index_of x) (n:= index_of y).
+intro. omega.
+intro. apply False_ind. apply N. apply index_lteq_ssuccseq.
+auto. omega.
+Qed.
+
+Lemma orig_precede : 
+  forall (x y : node) (a Ly : msg), atomic a -> orig_at x a -> 
+  a <st Ly -> Ly <[node] y -> strand_of x = strand_of y -> ssuccseq x y.
+Proof.
+intros x y a Ly Atom Oxa aLy Lyy Sxy.
+apply Peirce. intros. assert (Syx : y ==>+ x).
+apply not_ssuccseq; auto. apply False_ind.
+destruct Oxa as (_, (_, Contra)).
+apply Contra with (n':=y). auto.
+apply comp_trans with (L:=Ly); auto.
+Qed.
+
+Lemma eq_strand_trans : 
+  forall x y z, strand_of x = strand_of y -> strand_of y = strand_of z ->
+  strand_of x = strand_of z.
+Proof.
+intros x y z Sxy Syz.
+congruence.
+Qed.
+
+Lemma ssuccseq_imp_eq_or_ssuccs :
+  forall x y, ssuccseq x y -> x = y \/ ssuccs x y.
+Proof.
+intros x y Sxy. induction Sxy.
+right. apply t_step; auto.
+left. reflexivity.
+case IHSxy1.
+  intro. subst. auto. 
+  intro. case IHSxy2.
+    intro. subst. auto.
+    intro. right. 
+    apply ssuccs_trans with (y:=y); auto.
+Qed.
+
+
+Lemma orig_new_at : 
+  forall (x y : node) (a Ly : msg), xmit y -> atomic a ->
+  ssuccs x y -> orig_at x a -> a <st Ly -> Ly <[node] y -> 
+  exists  x' Lx, a <st Lx /\ Lx <[node] x' /\ (transformed_edge x y Lx Ly \/Lx = Ly).
+Proof.
+intros x y a Ly Xy Atom Sxy Oxa ALy Lyy.
+
+case (new_at_dec y Ly).
+  intro NLyy.
+  assert (Ex : exists Lx, a<st Lx /\ Lx <[node] x).
+  apply ingred_exists_comp_of_node. auto. 
+  apply orig_imp_ingred. auto. destruct Ex as (Lx, (aLx, Lxx)).
+  exists x, Lx. split. auto. split; auto.
+  left. unfold transformed_edge. 
+  split. auto.
+  intros. exists y. split; auto. split; auto.
+  split. apply rt_refl. auto.
+
+  intro NNLyy.
+  assert (Hmin : has_min_elt (P_comp Ly y)).
+  apply not_new_at_exists; auto. 
+  destruct Hmin as (z, (H1, H2)).
+  assert (Sxz : ssuccseq x z). apply orig_precede with (a:=a) (Ly:=Ly); auto.
+  apply H1. apply eq_strand_trans with (y:=y).
+  apply ssuccs_same_strand; auto. symmetry. apply ssuccs_same_strand. apply H1.
+  case (ssuccseq_imp_eq_or_ssuccs x z); auto.
+    intro Exz. exists x, Ly. subst. split. auto. split. apply H1.
+    right; auto.
+
+    intro SSxz.
+    case (xmit_or_recv z).
+    intro Xz.  assert (Ex : exists Lx, a<st Lx /\ Lx <[node] x).
+    apply ingred_exists_comp_of_node. auto. 
+    apply orig_imp_ingred. auto. destruct Ex as (Lx, (aLx, Lxx)). 
+    exists x, Lx.  split; auto. split; auto. left.
+    split; auto. exists z. split; auto. split; auto. 
+    split. apply ssuccs_imp_ssuccseq. apply H1. apply min_new_at with (n:=y).
+    split; auto.
+
+    intro Rz. exists z, Ly. split; auto. split; auto. apply H1.
+Qed.
 
 Section back_ward.
-(*  Variable a L: msg.
+  Variable a L: msg.
   Variable n : node.
+(*
 Lemma backward_construction' :  
-    atomic a -> L <[node] n -> ~ orig_at n a -> a <st L ->
-    exists (n':node) (L':msg), 
-      (a <st L' /\ L' <[node] n' /\ (L' = L \/ (L'<>L -> transformed_edge n' n L' L))) /\
-      (xmit n').
-
+    atomic a -> a <st L -> L <[node] n -> ~ orig_at n a ->
+    exists (n':node) (L':msg), (msg_deliver n' n \/ (ssuccs n' n  /\ xmit n)) /\
+      (a <st L' /\ L' <[node] n' /\ (L' = L \/ (L'<>L -> transformed_edge n' n L' L))).
 Proof.
-  intros Hatom Hcom Hnorig Hst.
+  intros Hatom Hcom Hst Norig.
   case (xmit_or_recv n).
   Focus 2. intros Hrecv.
   assert (Hex : exists (n':node), msg_deliver n' n). 
   apply was_sent. auto.
   destruct Hex as (n', Hmsg_deli).
   exists n'; exists L. 
-  left. split. left; auto.
-  split. exact Hst.
+  split. left. auto.
+  split. exact Hcom.
   split. apply msg_deliver_comp with (n1:=n') (n2:=n).
   split; assumption.
   left. trivial.  
 
-  intros Hxmit. Check P_ingred.
+  intros Hxmit.
   assert (Hmin : has_min_elt (P_ingred a n)).
-  apply not_orig_exists. admit. auto. auto. destruct Hmin as (n', Hm).
-  destruct Hm. case (xmit_or_recv n').
-  intros.
+  apply not_orig_exists. apply comp_trans with (L:= L); auto. auto. auto.
+  destruct Hmin as (n', Hm).
+    case (xmit_or_recv n').
+    intros Xn'. assert (Orign : orig_at n' a). 
+    apply min_xmit_orig with (n:=n); auto.
+    case (new_at_dec n L).
+    intros NLn. assert (Cn' : exists L', a <st L' /\ L' <[node] n').
+    apply ingred_exists_comp_of_node. auto. SearchAbout orig_at. 
+    apply orig_imp_ingred; auto. destruct Cn' as (L', (aL', L'n')). 
+    exists n', L'. split. right. split. destruct Hm. apply H. auto.
+    split. auto. split. auto. case (eq_msg_dec L' L). auto.
+    intros. right. intros. unfold transformed_edge.
+  
+
   assert (Hdec : new_at L n \/ ~(new_at L n)). tauto. 
   case Hdec.
   intros Hnew. 

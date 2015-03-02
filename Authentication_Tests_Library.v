@@ -186,13 +186,6 @@ End Proposition_10.
 (*********************************************************************)
 
 Section Proposition_11.
-Section Proposition_11_aux.
-Variable n' : node.
-Variable a t : msg.
-
-Hypothesis Atom : atomic a.
-Hypothesis A_ingred_t : a <st t.
-Hypothesis T_ingred_n' : t <[node] n'.
 
 Lemma single_node_tp : 
   forall (n:node) (m:msg), 
@@ -211,29 +204,35 @@ Proof.
   apply False_ind. omega.
 Qed.
 
-Definition Proposition_11_aux (n':node): Prop := 
-  forall (a t : msg), atomic a -> a <st t -> t <[node] n' ->
-  exists p, let ln := fst (split p) in 
-            let lm := snd (split p) in 
-            is_trans_path p /\ 
-            orig_at (nth_node 0 ln) a /\
-            nth_node (length p - 1) ln = n' /\ 
-            nth_msg (length p -1) lm = t /\
-            forall (i:nat), i < length p -> a <st (nth_msg i lm).
-End Proposition_11_aux.
+Definition p11_aux (n:node) (a t : msg) p : Prop := 
+  let ln := fst (split p) in 
+  let lm := snd (split p) in 
+  is_trans_path p /\ 
+  orig_at (nth_node 0 ln) a /\
+  nth_node (length p - 1) ln = n /\ 
+  nth_msg (length p -1) lm = t /\
+  forall (i:nat), i < length p -> a <st (nth_msg i lm).
 
-Lemma Prop_11 : forall (n' : node), Proposition_11_aux n'.
+Definition p11_aux2 (n:node): Prop := 
+  forall (a t : msg), atomic a -> a <st t -> t <[node] n ->
+  exists p, p11_aux n a t p.
+  
+Lemma tpath_extend : 
+  forall n n' a t, exists p, p11_aux n a t p -> p11_aux2 n'.
+Admitted.
+
+Lemma Prop_11 : forall (n' : node), p11_aux2 n'.
 Proof.
 apply well_founded_ind with (R:=prec).
 exact wf_prec.
-  intros x IH. unfold Proposition_11_aux in *.                                  
-  intros a t Sat Atoma Stx.
+  intros x IH.                                 
+  intros a t Sat Atoma Stx. 
   assert (Orig : orig_at x a \/ ~ orig_at x a). tauto.
   case Orig.
-  intros Oxa. exists ([(x, t)]). simpl. split.
+  intros Oxa. exists ([(x, t)]). split.
   apply single_node_tp with (n:=x) (m:=t). auto.
   split; auto. split; auto. split; auto.
-  intros. assert (i=0). omega. rewrite H0;auto.
+  intros. simpl in H. assert (i=0). omega. rewrite H0;auto.
 
   intro NOrig. case (xmit_or_recv x).
   Focus 2. intro Recvx. assert (exists y, msg_deliver y x).

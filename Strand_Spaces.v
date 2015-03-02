@@ -250,7 +250,6 @@ Axiom wf_prec: well_founded prec.
 Definition is_minimal: (node -> Prop) -> node -> Prop :=
   fun P x => (P x) /\ forall y, (prec y x) -> ~( P y).
 
-
 Definition has_min_elt: (node -> Prop) -> Prop :=
   fun P  =>   exists x:node, is_minimal P x.
 
