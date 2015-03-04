@@ -218,7 +218,14 @@ Definition p11_aux2 (n:node): Prop :=
   exists p, p11_aux n a t p.
   
 Lemma tpath_extend : 
-  forall n n' a t, exists p, p11_aux n a t p -> p11_aux2 n'.
+  forall n a t, 
+  (exists (n':node) (L':msg), (msg_deliver n' n \/ (ssuccs n' n  /\ xmit n)) /\
+  (a <st L' /\ L' <[node] n' /\ (L' = t \/ (L'<>t -> transformed_edge n' n L' t))) /\ 
+  exists p, p11_aux n' a L' p) ->
+  exists p, p11_aux n a t p .
+Proof.
+intros n a t (n', (L', (C1, (C2, (p, C4))))).
+exists (p++[(n,t)]). split.
 Admitted.
 
 Lemma Prop_11 : forall (n' : node), p11_aux2 n'.
@@ -239,7 +246,14 @@ exact wf_prec.
   apply was_sent; auto. admit.
 
   intros. 
-Admitted.
-
+  assert (exists (y:node) (Ly:msg), (msg_deliver y x \/ (ssuccs y x  /\ xmit x)) /\
+         (a <st Ly /\ Ly <[node] y /\ (Ly = t \/ (Ly<>t -> transformed_edge y x Ly t)))).
+  apply backward_construction'; auto. destruct H0 as (y, (Ly, (H1, H2))).
+  apply tpath_extend. exists y, Ly. split. apply H1.
+  split. apply H2.
+  apply IH. case H1. intro. apply deliver_prec; auto.
+  intro. apply ssuccs_prec. apply H0.
+  auto. apply H2. apply H2.
+Qed.
 
 End Proposition_11.

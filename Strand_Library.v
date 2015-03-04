@@ -819,6 +819,9 @@ intros.
   simpl. omega. omega.
 Qed.
 
+Lemma transpath_extend :
+  forall p, is_trans_path p -> False. Admitted. 
+
 Section Prop_11.
   Variable a : msg.
   Variable n : node.
@@ -1167,7 +1170,7 @@ Qed.
 Section back_ward.
   Variable a L: msg.
   Variable n : node.
-(*
+
 Lemma backward_construction' :  
     atomic a -> a <st L -> L <[node] n -> ~ orig_at n a ->
     exists (n':node) (L':msg), (msg_deliver n' n \/ (ssuccs n' n  /\ xmit n)) /\
@@ -1193,9 +1196,11 @@ Proof.
     case (xmit_or_recv n').
     intros Xn'. assert (Orign : orig_at n' a). 
     apply min_xmit_orig with (n:=n); auto.
+    assert (Hex : exists y Ly, a <st Ly /\ Ly <[node] y /\ (transformed_edge n' n Ly L \/ Ly = L)).
+    apply orig_new_at; auto. apply Hm.
     case (new_at_dec n L).
     intros NLn. assert (Cn' : exists L', a <st L' /\ L' <[node] n').
-    apply ingred_exists_comp_of_node. auto. SearchAbout orig_at. 
+    apply ingred_exists_comp_of_node. auto. 
     apply orig_imp_ingred; auto. destruct Cn' as (L', (aL', L'n')). 
     exists n', L'. split. right. split. destruct Hm. apply H. auto.
     split. auto. split. auto. case (eq_msg_dec L' L). auto.
@@ -1216,7 +1221,9 @@ Proof.
   assert (HexL1 : exists L1, ingred a L1 /\ comp_of_node L1 n1).
   apply ingred_exists_comp_of_node; assumption.
   destruct HexL1 as (L1, (H1, H2)).
-  exists n1; exists L1.
+
+  Admitted.
+(*  exists n1; exists L1.
   split. right. assumption.
   split. assumption.
   split. assumption.
