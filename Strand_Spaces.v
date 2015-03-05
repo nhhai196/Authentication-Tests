@@ -372,7 +372,7 @@ Section Trans_path.
 
   Definition transformed_edge (x y : node) (Lx Ly : msg) :Prop :=
     ssuccs x y /\ 
-    exists z, xmit z /\ ssuccs x z /\ ssuccseq z y /\ new_at Ly z.
+    exists z, ssuccseq x z /\ ssuccseq z y /\ new_at Ly z.
 
   Definition is_trans_path : Prop := 
     (is_path ln \/ (ssuccs (nd 0) (nd 1) /\  xmit (nd 0) /\

@@ -2,7 +2,8 @@
 (* This file contains all the propositions needed for authentication tets *)
 
 Require Import Strand_Spaces Message_Algebra Strand_Library.
-Require Import Lists.List.
+Require Import Lists.List Relation_Definitions Relation_Operators.
+Require Import List_Library.
 Import ListNotations.
 
 (** * Proposition 7 *)
@@ -111,10 +112,6 @@ Section Proposition_10.
   Hypothesis Hcom : L p n <> L p (n+1).
   Hypothesis Pnode : p_node (nd p n).
 
-  Lemma ssuccs_eq : 
-    forall x y z, ssuccs x y -> ssuccseq y z -> ssuccs x z.
-  Admitted.
-
   Lemma trans_path_ssuccs : 
       ssuccs (nd p n) (nd p (n+1)). 
   Proof.
@@ -124,7 +121,7 @@ Section Proposition_10.
       apply False_ind. apply Hcom. auto.
     destruct H. auto.
     destruct H0 as (m,(Hxmit,(Hnew,(Hssuc,Hsseq)))).
-    apply ssuccs_eq with (y:= m); auto.
+    auto.
   Qed.
 
   Lemma Prop10_recv_xmit : recv (nd p n) /\ xmit (nd p (n+1)).
@@ -218,14 +215,41 @@ Definition p11_aux2 (n:node): Prop :=
   exists p, p11_aux n a t p.
   
 Lemma tpath_extend : 
-  forall n a t, 
-  (exists (n':node) (L':msg), (msg_deliver n' n \/ (ssuccs n' n  /\ xmit n)) /\
-  (a <st L' /\ L' <[node] n' /\ (L' = t \/ (L'<>t -> transformed_edge n' n L' t))) /\ 
-  exists p, p11_aux n' a L' p) ->
-  exists p, p11_aux n a t p .
+  forall x a t, a <st t -> t <[node] x ->
+  (exists (x':node) (t':msg), (path_edge x' x \/ (ssuccs x' x  /\ xmit x' /\ xmit x /\ orig_at x' a)) /\
+  (a <st t' /\ t' <[node] x' /\ (t' = t \/ (t'<>t -> transformed_edge x' x t' t))) /\ 
+  exists p, p11_aux x' a t' p) ->
+  exists p, p11_aux x a t p.
 Proof.
-intros n a t (n', (L', (C1, (C2, (p, C4))))).
-exists (p++[(n,t)]). split.
+intros x a t Sat Ntx (x', (t', (C1, (C2, (p, C4))))).
+unfold p11_aux in *.
+destruct C4 as (C5, (C6, (C7, (C8, C9)))).
+assert (S : is_trans_path [(nth_node (length p - 1) (fst (split p)), 
+                            nth_msg (length p - 1) (snd (split p))); (x,t)] /\
+                            orig_at (nth_node (length p - 1) (fst (split p))) a
+            \/ is_trans_path (p++[(x,t)])).
+apply transpath_extend; auto. rewrite C7.
+  case C1.
+  intro. left. auto.
+  intro. right. repeat split; apply H.
+  rewrite C7, C8 in *. destruct C2. auto.
+  rewrite C8. apply C2.
+  rewrite C7, C8 in *.
+case S.
+  intro. exists [(x', t'); (x, t)].
+  split. apply H. split. simpl. assert (nth_node 0 [x'; x] = x'). auto.
+  rewrite H0. apply H. 
+  simpl. split. auto. split. auto.
+  intros. assert (i=0 \/ i=1). omega.
+    case H1. intro. rewrite H2. assert((nth_msg 0 [t';t]) = t'). auto.
+    rewrite H3. apply C2.
+    intro. assert (nth_msg 1 [t';t] = t). auto. rewrite H2. rewrite H3. auto.
+    
+  intro. exists (p++[(x,t)]).
+  split. auto. rewrite list_split_fst. rewrite path_nth_app_left.
+  split; auto. rewrite app_length. simpl. assert (length p + 1- 1=length p). omega.
+  rewrite H0. split. admit. split. admit.
+  intro.
 Admitted.
 
 Lemma Prop_11 : forall (n' : node), p11_aux2 n'.
@@ -243,16 +267,21 @@ exact wf_prec.
 
   intro NOrig. case (xmit_or_recv x).
   Focus 2. intro Recvx. assert (exists y, msg_deliver y x).
-  apply was_sent; auto. admit.
+  apply was_sent; auto. apply tpath_extend; auto. destruct H as (y, Dyx).
+  exists y, t. split. left. apply path_edge_single. auto.
+  split. split. auto. split. auto. apply msg_deliver_comp with (n2:=x).
+  split; auto. left; auto. apply IH. apply deliver_prec; auto. auto.
+  auto. apply msg_deliver_comp with (n2:=x). split; auto.
 
   intros. 
-  assert (exists (y:node) (Ly:msg), (msg_deliver y x \/ (ssuccs y x  /\ xmit x)) /\
-         (a <st Ly /\ Ly <[node] y /\ (Ly = t \/ (Ly<>t -> transformed_edge y x Ly t)))).
-  apply backward_construction'; auto. destruct H0 as (y, (Ly, (H1, H2))).
-  apply tpath_extend. exists y, Ly. split. apply H1.
+    assert (exists (x':node) (t':msg), (path_edge x' x \/ (ssuccs x' x  /\ xmit x' /\ xmit x /\ orig_at x' a)) /\
+           (a <st t' /\ t' <[node] x' /\ (t' = t \/ (t'<>t -> transformed_edge x' x t' t)))).
+  apply backward_construction; auto. destruct H0 as (y, (Ly, (H1, H2))).
+  apply tpath_extend; auto. exists y, Ly. split. apply H1.
   split. apply H2.
-  apply IH. case H1. intro. apply deliver_prec; auto.
-  intro. apply ssuccs_prec. apply H0.
+  apply IH. case H1.
+    intro. apply path_edge_prec. auto.
+    intro. apply ssuccs_prec. apply H0.
   auto. apply H2. apply H2.
 Qed.
 

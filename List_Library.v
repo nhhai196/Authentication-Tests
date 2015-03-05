@@ -4,7 +4,7 @@ Require Import List Omega Ring Peano.
 Import ListNotations.
 
 Section List_Library.
-Variable A : Type.
+Variable A B : Type.
 Variable default : A.
 
 Lemma list_nth_app : 
@@ -47,6 +47,21 @@ destruct n. inversion lgt. simpl. apply IHp.
 inversion lgt; auto. subst. simpl in H0. omega.
 inversion llt. auto. omega.
 Qed.
+
+Lemma list_split_fst :
+   forall (p : list (A*B)) (a:A) (b:B), fst (split (p++[(a,b)])) = (fst (split p))++[a].
+Proof.
+intros p a b.
+induction p. simpl. auto.
+Admitted.
+
+Lemma list_split_snd :
+   forall (p : list (A*B)) (a:A) (b:B), snd (split (p++[(a,b)])) = (snd (split p))++[b].
+Admitted.
+
+Lemma list_tl_extend: 
+  forall (p : list (A*B)) (x:A) , tl (fst (split p) ++ [x]) = tl (fst (split p)) ++ [x].
+Admitted.
 
 Lemma paradox : 1 - 2 = 0.
 Proof.
