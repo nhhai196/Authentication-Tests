@@ -18,7 +18,32 @@ Important units for protocol correctness are components. A term $t$ is a compone
 \section{The Coq Proof Assistant Overview.}
 \subsection{What is Coq?}
 We briefly describe what the Coq proof assistant is in this section.\\
-The coq system is based on the Calculus of Inductive Constructions and a certain higher order logic. Under programming language point of view, Coq implements dependently typed functional programming language, while under logical system, it implements a higher-order type theory.
+Under programming language point of view, Coq implements dependently typed functional programming language, while under logical system, it implements a higher-order type theory. Coq exploits the notion of Curry-Howard isomorphism - the correspondence between proofs and programs. The relation between a proof and the statement it proves is the same as the relation between a program and its type. At the level of proofs and programs, we have the following correspondence:
+\begin{center}
+	\begin{tabular}{|c|c|}
+		\hline 
+		Logic side & Programming side \\ \hline
+		hypothesis & free variables \\ \hline
+		implication elimination & application \\ \hline
+		implication introduction & abstraction \\ \hline
+	\end{tabular}
+\end{center}
+While the below table summaries the correspondence at the level of terms and types:
+\begin{center}
+	\begin{tabular}{|c|c|}
+		\hline
+			Logic side & Programming side \\ \hline 
+			universal quantification & generalised function space \\ \hline
+			existential quantification & generalised cartesian product \\ \hline
+			implication	& function type \\ \hline
+			conjunction	& product type \\ \hline
+			disjunction	& sum type \\ \hline
+			true formula & unit type \\ \hline
+			false formula & bottom (empty) type \\ \hline
+	\end{tabular}
+\end{center}
+The correspondence says that implication behaves the same as a function type, conjunction as product type, disjunction as sum type, and so on... For example, $T:\tau$ means a term $T$ of type $\tau$ or equipvalently a proof $T$ of the proposition $\tau$; $A \rightarrow B$ is the type of a function that associate a term of type $B$ to any term of type $A$, while a proof of $A \rightarrow B$ is a term of that type or a term of the form $\lambda x.t$ where x is a proof of $A$ and t is a proof of $B$. \\
+The coq system is based on the Calculus of Inductive Constructions (CIC) - from version V8 it is based on a weaker calculus, namely Predicate Calculus of Inductive Constructions (pCIC). There is usually a syntatic distinction between types and terms in most type theories. However, types and terms are defined as the same syntatic structure so everything even type is a term in Coq. Consequently, all objects have a type - atomic types, types for functions, types for proofs, types for types. When manipulated as terms, types are themselves a type which is a constant of the language called a sort. Prop and Set are the two base sorts. The sort Prop is the universe of propositions. The sort Set intends to be the type of small sets and includes data types such as booleans, natural numbers, and but also includes products, subsets, function type over these data types. The language of CIC also has typed terms, conversion rules, derived rules, and (co)inductive definitions.\\ 
 The Coq system is a computer tool for mechanically verifying theorem proofs, which means that once you have proved something in Coq, you have strong assurance that it is true - more than what you usually have when doing a pen-and-paper proof. These theorems may concern usual mathematics, proof theory, or program verification. The Coq proof assistant are very powerful and expressive both for reasoning and programming. We can construct from simple terms and write simple proofs to building whole theories and complex algorithms. It provides an environment for defining objects (integers, sets, trees, functions...), making statements using logical connectives and basic predicates, and writing proofs. It also provides program extraction towards Haskell and Ocaml for efficient execution of algorithms and linking with other libraries.\\
 The Coq compiler automatically checks the correctness of definitions (well-formed
 sets, terminating functions...) and of proofs.\\
