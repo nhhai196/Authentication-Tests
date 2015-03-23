@@ -1,9 +1,36 @@
 \chapter{Introduction.}
 \section{Objectives and Project Motivation.}
-Cryptographic protocols are intended to let principals communicate securely over a communication protocol which are designed to provide various kinds of security assurances. An important security goal of cryptographic protocol is authentication, the act of confirming the truth of an attribute of a datum or entity like verifying freshness of a nonce. Many research papers about authentication have published. One of them is “Authentication Tests and the Structure of Bundles” by Joshua Guttman and Javier Thayer. The main idea of authentication tests is that if a principal in a cryptographic protocol creates and transmits a message containing a new value v, and later receives v back in a different cryptographic context then it can be concluded that some principal processing the relevant key has received and transformed the message in which  was emitted. The authentication tests themselves are easy to apply but the proof justifying them are more complicated. Though authentication tests are proved in the paper, they have not been formally verified.  As we know that once lemma or a theorem has been proved in some proof assistant language like Coq, we will have a very strong assurance that it is true - much more than what we usually have when doing a pen-and-paper proof.\\
+Cryptographic protocols are intended to let principals communicate
+securely over a communication protocol which are designed to provide
+various kinds of security assurances. An important security goal of
+cryptographic protocol is authentication, the act of confirming the
+truth of an attribute of a datum or entity like verifying freshness of
+a nonce. Many research papers about authentication have published. One
+of them is “Authentication Tests and the Structure of Bundles” by
+Joshua Guttman and Javier Thayer. The main idea of authentication
+tests is that if a principal in a cryptographic protocol creates and
+transmits a message containing a new value v, and later receives v
+back in a different cryptographic context then it can be concluded
+that some principal processing the relevant key has received and
+transformed the message in which  was emitted. The authentication
+tests themselves are easy to apply but the proof justifying them are
+more complicated. Though authentication tests are proved in the paper,
+they have not been formally verified.  As we know that once lemma or a
+theorem has been proved in some proof assistant language like Coq, we
+will have a very strong assurance that it is true - much more than
+what we usually have when doing a pen-and-paper proof.\\
+
 In addition, we found that there are few papers and projects using Coq to verify security goal of cryptographic protocols and to particularly formalize strand spaces, which is a well-known approach to cryptographic protocols.\\
+
 In this project we will prove authentication tests under strand space formalism approach by using the Coq proof assistant. First, we will formalize strand spaces and all stuffs needed for proving authentications tests like components,transformation paths, penetrable keys, and so on... Then, we will give detailed formal proofs of all relevant lemmas, theorems, and finally authentication tests.\\
-This project will help researchers in security area have more confidence in using the result of authentication tests since they are formally verified. Our implementation is modular so that researchers can easily extract certain modules for their purpose. For example, the formalization of strand spaces can be used as a frame work for later research using strand space approach.  
+
+This project will help researchers in security area have more
+confidence in using the result of authentication tests since they are
+formally verified. Our implementation is modular so that researchers
+can easily extract certain modules for their purpose. For example, the
+formalization of strand spaces can be used as a frame work for later
+research using strand space approach.
+  
 \section{Strand Space Overview.}
 In this section, we briefly summarize the ideas behind the strand space model. The Coq development in the next chapter will provides precise definitions.\\
 A strand spaces is a set of strands; one may think of a strand space as containing all legitimate executions together with all the actions that a penetrator may apply to the messages contained in these executions.\\
@@ -15,15 +42,58 @@ Another important concept under strand space is origination. We say that a term 
 A bundle is a casually well-founded collection of nodes and two relations $\Rightarrow$ and $\rightarrow$. It represents the actual protocol interactions. In a bundle, when a a strand receives a message $m$, there is a unique node transmitting $m$ from which the message was immediately  received. In contrast, when a strand transmits a message $m$, many strands or none may immediately receive $m$. The height of a strand in a bundle is the number of nodes on the strand that are in the bundle.\\
 The penetrator's powers are characterized by the set of compromised keys which are initially known to penetrator, and a set of penetrator strands that allow the penetrator to generate new messages. The set of compromised keys typically would contain all public keys, all private keys of penetrators, and all symmetric keys initially shared between the penetrator and principals playing by the protocol rules. The atomic actions available to penetrator are encoded in a set of penetrator strands. We partition penetrator strands according to the operations they exemplify. E-strands encrypt when given a key and a plain-text; D-strands decrypt when given a decryption key and matching cipher-text; C-strands concatenate terms; S-strands separate terms; M-strands emit known atomic text or guess; and K-strands emit keys from a set of known keys.\\
 Important units for protocol correctness are components. A term $t$ is a component of another term $t'$ if $t \sqsubset t'$, t is nt a concatenated term, and for every $s \neq t$ such that $t \sqsubset s \sqsubset t'$, $s$ is a concatenated term. Thus, a component is either atomic value or an encryption. A term $t$ is new at a node $n=<s,i>$ if t is a component of $term(n)$ but $t$ is not a component of node $<s,j>$ for every $j < i$. A component is new even if it has occurred earlier as a nested subterm of some larger component. When a component occurs new in a regular node but was a subterm of some previous node, then the principal executing that strand has done some cryptographic work to extract it as a new component. 
+
 \section{The Coq Proof Assistant Overview.}
 \subsection{What is Coq?}
-We briefly describe what the Coq proof assistant is in this section.\\
-Under programming language point of view, Coq implements dependently typed functional programming language, while under logical system, it implements a higher-order type theory. Coq exploits the notion of Curry-Howard isomorphism - the correspondence between proofs and programs. The relation between a proof and the statement it proves is the same as the relation between a program and its type. At the level of proofs and programs, we have the following correspondence summarized in Table 1.1.
+We briefly describe what the Coq proof assistant is in this section.
+
+The Coq system is a computer tool for mechanically verifying theorem
+proofs, and at the same time a functional programming language with a
+powerful type system.
+
+Once you have proved something in Coq, you
+have strong assurance that it is true - more than what you usually
+have when doing a pen-and-paper proof. These theorems may concern
+usual mathematics, proof theory, or program verification. The Coq
+proof assistant is very powerful and expressive both for reasoning
+and programming. We can construct from simple terms and write simple
+proofs to building whole theories and complex algorithms. It provides
+an environment for defining objects (integers, sets, trees,
+functions...), making statements using logical connectives and basic
+predicates, and writing proofs. It also provides program extraction
+towards Haskell and Ocaml for efficient execution of algorithms and
+linking with other libraries.
+
+The Coq compiler automatically checks the correctness of definitions
+(well-formed sets, terminating functions...) and of proofs
+
+As a proof assistant, Coq is similar to higher order logic (HOL)
+systems, a family of interactive theorem prover based on Church's HOL
+including Isabelle, PVS... Unlike these systems, Coq is based on
+intuitionistic type theory. Consequently, it is closer to Epigram, and
+NuPrl... The common properties of these system are that functions are
+programs that can be computed and not just binary relation.  Coq can
+be used from standard teletype-like shell window but preferably
+through the graphical user interface called CoqIde. Coq is not an
+automated theorem prover which means that it does not automatically
+prove theorems. However, it can be considered as a semi-automated
+theorem prover since it includes many automatic theorem proving tatics
+and various decision procedures. It greatly simplifies the development
+of formal proofs by automating some aspects of it.
+
+Under programming language point of view, Coq implements dependently
+typed functional programming language, while under logical system, it
+implements a higher-order type theory. Coq exploits the notion of
+Curry-Howard isomorphism - the correspondence between proofs and
+programs. The relation between a proof and the statement it proves is
+the same as the relation between a program and its type. At the level
+of proofs and programs, we have the following correspondence
+summarized in Table 1.1.
 \begin{table}[h!]
 \begin{center}
 	\begin{tabular}{|c|c|}
-		\hline 
-		Logic side & Programming side \\ \hline
+		\hline
+		Logic side & Programming side \\ \hline  \hline
 		hypothesis & free variables \\ \hline
 		implication elimination & application \\ \hline
 		implication introduction & abstraction \\ \hline
@@ -31,6 +101,7 @@ Under programming language point of view, Coq implements dependently typed funct
 \end{center}
 \caption{}
 \end{table}
+
 And Table 1.2 summaries the correspondence at the level of terms and types.
 \begin{table}[h!]
 \begin{center}
@@ -48,13 +119,39 @@ And Table 1.2 summaries the correspondence at the level of terms and types.
 \end{center}
 \caption{}
 \end{table}
-The correspondence says that implication behaves the same as a function type, conjunction as product type, disjunction as sum type, and so on... For example, $T:\tau$ means a term $T$ of type $\tau$ or equipvalently a proof $T$ of the proposition $\tau$; $A \rightarrow B$ is the type of a function that associate a term of type $B$ to any term of type $A$, while a proof of $A \rightarrow B$ is a term of that type or a term of the form $\lambda x.t$ where x is a proof of $A$ and t is a proof of $B$. \\
-The coq system is based on the Calculus of Inductive Constructions (CIC) - from version V8 it is based on a weaker calculus, namely Predicate Calculus of Inductive Constructions (pCIC). There is usually a syntatic distinction between types and terms in most type theories. However, types and terms are defined as the same syntatic structure so everything even type is a term in Coq. Consequently, all objects have a type - atomic types, types for functions, types for proofs, types for types. When manipulated as terms, types are themselves a type which is a constant of the language called a sort. Prop and Set are the two base sorts. The sort Prop is the universe of propositions. The sort Set intends to be the type of small sets and includes data types such as booleans, natural numbers, and but also includes products, subsets, function type over these data types. The language of CIC also has typed terms, conversion rules, derived rules, and (co)inductive definitions.\\ 
-The Coq system is a computer tool for mechanically verifying theorem proofs, which means that once you have proved something in Coq, you have strong assurance that it is true - more than what you usually have when doing a pen-and-paper proof. These theorems may concern usual mathematics, proof theory, or program verification. The Coq proof assistant are very powerful and expressive both for reasoning and programming. We can construct from simple terms and write simple proofs to building whole theories and complex algorithms. It provides an environment for defining objects (integers, sets, trees, functions...), making statements using logical connectives and basic predicates, and writing proofs. It also provides program extraction towards Haskell and Ocaml for efficient execution of algorithms and linking with other libraries.\\
-The Coq compiler automatically checks the correctness of definitions (well-formed
-sets, terminating functions...) and of proofs.\\
-Coq is a proof assistant similar to higher order logic (HOL) systems, a family of interactive theorem prover based on Church's HOL including Isabelle, PVS... Unlike these systems, Coq is based on intuitionistic type theory. Consequently, it is closer to Epigram, and NuPrl... The common properties of these system are that functions are programs that can be computed and not just binary relation.
-Coq can be used from standard teletype-like shell window but preferably through the graphical user interface called CoqIde. Coq is not an automated theorem prover which means that it does not automatically prove theorems. However, it can be considered as a semi-automated theorem prover since it includes many automatic theorem proving tatics and various decision procedures. It greatly simplifies the development of formal proofs by automating some aspects of it. 
+The correspondence says that, for example, implication behaves the same as a
+function type, conjunction as product type, and disjunction as sum
+type. %
+The assertion $T:\tau$ means that the term $T$ is of type $\tau$ or
+equivalently that $T$ is a proof of the proposition $\tau$.   A type $A \rightarrow B$
+is the type of a function that associates  a term of type $B$ to any
+term of type $A$, while a proof of $A \rightarrow B$ is a term of that
+type or a term of the form $\lambda x.t$ where x is a proof of $A$ and
+t is a proof of $B$. 
+
+There is usually a syntactic distinction between types and terms in
+most type theories. However, types and terms are defined as the same
+syntatic structure so everything even type is a term in
+Coq. Consequently, all objects have a type:  atomic types, types for
+functions, types for proofs, types for types. When manipulated as
+terms, types are themselves a type which is a constant of the language
+called a sort. Prop and Set are the two base sorts. The sort Prop is
+the universe of propositions. The sort Set intends to be the type of
+small sets and includes data types such as booleans, natural numbers,
+and but also includes products, subsets, function type over these data
+types.
+
+The original Coq system was based on the Calculus of Constructions
+(CoC). %
+Version 7 was based on a generalization of CoC, the Calculus of Inductive
+Constructions (CIC). %
+Since version V8 it is based on a weaker calculus, namely Predicate
+Calculus of Inductive Constructions (pCIC). %
+[citation] 
+The language of CIC also has typed terms, conversion rules,
+derived rules, and (co)inductive definitions.
+
+
 \subsection{Coq Architecture}
 Coq have two levels architecture - kernel and environment. A relatively small kernel based on a language with few primitive constructions (sorts, functions, inductive definitions, product types...) and a limited number of rules for type checking and computation. On top of the kernel, there is a rich environment to help designing theories and proofs. This environment offers mechanism like user extensible notations, tatics for proof automation, libraries... Any definition or proof defined in the environment is ultimately checked by the kernel so the environment can be used and extended safely.\\
 As a Coq user, using high level constructions will help to solve a problem quickly. However, it might also important to understand the underlying low level language in order to develop new functionalities and to better control how certain constructions work. 
@@ -101,3 +198,8 @@ This is an appendix.
 % Then, you run bibtex once in a while during compilation, and the
 % rest is done in two lines:
 
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "Report"
+%%% End:
