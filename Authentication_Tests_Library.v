@@ -286,3 +286,52 @@ exact wf_prec.
 Qed.
 
 End Proposition_11.
+
+(*********************************************************************)
+
+(** * Proposition 13 *)
+(*
+Section P13. 
+  Variable pl : path.
+  Let p := fst (split pl).
+  Let l := snd (split pl).
+  Hypothesis Hpp : p_path p.
+  Hypothesis Hp1 : simple (msg_of (nth_node 0 p)).
+
+  Lemma Prop13 : 
+    forall (i:nat), i < length p - 1 -> 
+    exists (j:nat), (j <= i /\ msg_of (nth_node j p) = nth_msg i l).
+  Proof.
+  Definition P13_1_aux (n:nat) : Prop :=
+    msg_of (nth_node n p) = (nth_msg (length p - 1) l) /\
+    forall (i:nat), i >= n -> i <= length p - 1 -> 
+      nth_msg i l = nth_msg (length p - 1) l.
+  Lemma P13_1 : 
+    exists (n:nat), P13_1_aux n /\ 
+      (forall m, m > n -> ~ P13_1_aux m) /\
+      exists i, i < length p - 1 -> nth_msg i l <> nth_msg (i+1) l ->
+        xmit (nth_node n p) /\ EStrand (strand_of (nth_node n p)).
+  Admitted.
+End P13.
+End Path.    
+*)
+
+(*********************************************************************)
+
+Section P17.
+Definition Prop17_aux (n:node) : Prop :=
+  forall (k : Key), msg_of n = K k -> PKeys k.
+
+Lemma Prop17 : forall (n:node), Prop17_aux n.
+Proof.
+  apply well_founded_ind with (R:=prec).
+  exact wf_prec.
+  intros x IH. unfold Prop17_aux in *.
+Admitted.
+End P17.
+
+(*********************************************************************)
+
+Section P18.
+End P18.
+

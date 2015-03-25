@@ -1,22 +1,3 @@
-     (* Time-stamp: <Mon 2/9/15 16:19 Dan Dougherty Strands.v> *)
-
-(* TO FIX:
-
- - better name for "path", "is_path", ...
-
- - can we avoid the default-value trick in the "ith" function?
-
-*)
-(* Things to learn how to do:
-
- 1) once you prove "exists x, blah(x)"
-    how to introduce, in a Section, a named Variable
-    satifying blah, to use>
-
- 2) How to extract minimum elements for a predicate?  Ie. would like a
-    function from inhabited predicates to nodes, rturning minimal
-    nodes.
-*)
 
 (* Add LoadPath "./". *)
 (* Add LoadPath "./Classical_Wf". *)
@@ -241,8 +222,6 @@ Axiom not_k_k : forall k k', inv k k' -> DStrand  [-(K k); -(E (K k) k'); + (K k
 (** ** Well-foundedness *)
 Axiom wf_prec: well_founded prec.
 
-
-
 (*********************************************************************)
 
 (** Minimal nodes *)
@@ -373,6 +352,14 @@ Section Trans_path.
   Definition transformed_edge (x y : node) (Lx Ly : msg) :Prop :=
     ssuccs x y /\ 
     exists z, ssuccseq x z /\ ssuccseq z y /\ new_at Ly z.
+
+  Definition transformed_edge_for (x y : node) (Lx Ly a :msg) : Prop :=
+    transformed_edge x y Lx Ly /\ atomic a /\
+    xmit x /\ recv y /\ a <st Lx /\ a <st Ly.
+
+  Definition transforming_edge_for (x y : node) (Lx Ly a :msg) : Prop :=
+    transformed_edge x y Lx Ly /\ atomic a /\
+    recv x /\ xmit y /\ a <st Lx /\ a <st Ly.
 
   Definition is_trans_path : Prop := 
     (is_path ln \/ (ssuccs (nd 0) (nd 1) /\  xmit (nd 0) /\
@@ -593,26 +580,6 @@ Proof.
   intro Hnorig.
   exists (p0++(n',L')::nil).
 Admitted.
-
+*)
 (*********************************************************************)
 
-(** * Proposition 13 *)
-Section P13. 
-  Variable pl : path.
-  Let p := fst (split pl).
-  Let l := snd (split pl).
-  Hypothesis Hpp : p_path p.
-  Hypothesis Hp1 : simple (msg_of (nth_node 0 p)).
-  Definition P13_1_aux (n:nat) : Prop :=
-    msg_of (nth_node n p) = (nth_msg (length p - 1) l) /\
-    forall (i:nat), i >= n -> i <= length p - 1 -> 
-      nth_msg i l = nth_msg (length p - 1) l.
-  Lemma P13_1 : 
-    exists (n:nat), P13_1_aux n /\ 
-      (forall m, m > n -> ~ P13_1_aux m) /\
-      exists i, i < length p - 1 -> nth_msg i l <> nth_msg (i+1) l ->
-        xmit (nth_node n p) /\ EStrand (strand_of (nth_node n p)).
-Admitted.
-End P13.
-End Path.    
-*)
