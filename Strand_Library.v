@@ -480,10 +480,10 @@ congruence. congruence.
 Qed.  
 
 Lemma CStrand_not_edge : 
-  forall (s:strand), CStrand s -> ~ exists (x y : node) (Lx Ly :msg), 
+  forall (s:strand), CStrand s -> ~ exists (x y : node) (a :msg), 
     strand_of x = s /\ strand_of y = s /\
-    recv x /\ xmit y /\ transformed_edge x y Lx Ly.
-Proof.
+    recv x /\ xmit y /\ transformed_edge x y a.
+(*Proof.
 intros s Cs (x,(y,(Lx,(Ly,(Sx,(Sy,(Rx,(Xy,(Sxy,(z,(Xz,(Sxz,(Szy, NLyz))))))))))))).
 inversion Cs.
 assert (P1 : msg_of y = P g h). apply smsg_2_msg_xmit. 
@@ -491,13 +491,13 @@ apply strand_3_nodes_nnp_xmit with (x:=g) (y:=h). congruence. auto.
 assert (P2 : smsg_of x = -g \/ smsg_of x = -h).
 apply strand_3_nodes_nnp_recv with (z:= P g h); auto. congruence.
 case P2.
-intro.
+intro.*)
 Admitted.
 
 Axiom SStrand_not_edge : 
-forall (s:strand), SStrand s -> ~ exists (x y : node) (Lx Ly :msg), 
+forall (s:strand), SStrand s -> ~ exists (x y : node) (a:msg), 
     strand_of x = s /\ strand_of y = s /\
-    recv x /\ xmit y /\ transformed_edge x y Lx Ly.
+    recv x /\ xmit y /\ transformed_edge x y a.
 
 
 (* (** ** Baby results about xmit and recv *)
@@ -846,10 +846,10 @@ Let lms := snd (split p).
 Let n':= nth_node (length p - 1) lns.
 Let t' := nth_msg (length p - 1) lms.
 Lemma transpath_extend :
-  is_trans_path p -> (path_edge n' n) \/ (ssuccs n' n  /\ xmit n' /\ xmit n) ->
-  (t' <[node] n' /\ (t' = t \/ (t'<>t -> transformed_edge n' n t' t))) -> 
+  is_trans_path p a -> (path_edge n' n) \/ (ssuccs n' n  /\ xmit n' /\ xmit n) ->
+  (t' <[node] n' /\ (t' = t \/ (t'<>t -> transformed_edge n' n a))) -> 
   a <st t -> a <st t' ->
-  ((is_trans_path [(n',t'); (n,t)] /\ orig_at n' a) \/ is_trans_path (p++[(n,t)])).
+  ((is_trans_path [(n',t'); (n,t)] a /\ orig_at n' a) \/ is_trans_path (p++[(n,t)]) a).
 Proof.
   intros Tp Hor (Ct'n', C) At At'.
   destruct Tp. 
@@ -1166,7 +1166,7 @@ Section back_ward.
 Lemma backward_construction :  
     atomic a -> a <st L -> L <[node] n -> ~ orig_at n a ->
     exists (n':node) (L':msg), (path_edge n' n \/ (ssuccs n' n  /\ xmit n' /\ xmit n /\ orig_at n' a)) /\
-      (a <st L' /\ L' <[node] n' /\ (L' = L \/ (L'<>L -> transformed_edge n' n L' L))).
+      (a <st L' /\ L' <[node] n' /\ (L' = L \/ (L'<>L -> transformed_edge n' n a))).
 Proof.
   intros Hatom Hcom Hst Norig.
   case (xmit_or_recv n).
@@ -1198,8 +1198,8 @@ Proof.
       intros NLn.    
       exists n', L'. split. right. split. destruct Hm. apply H. auto.
       split. auto. split. auto. case (eq_msg_dec L' L). auto.
-      intros. right. intros. split. apply Hm. exists n. 
-      split. apply ssuccs_imp_ssuccseq. apply Hm. split; auto. apply rt_refl.
+      intros. right. intros. split. apply Hm. split; auto. exists n, L. 
+      split. apply Hm. split. apply rt_refl. split; auto.
 
       intros NNLn.
       assert (Hmin : has_min_elt (P_comp a L n)).
@@ -1220,9 +1220,9 @@ Proof.
         intros SSn'z.
         exists n', L'. split. right. split; auto. apply Hm.
         split; auto. split. auto.
-        right. intros Neq. split. apply Hm.
-        exists z. split; auto. split. apply ssuccs_imp_ssuccseq. apply H1.
-        apply min_new_at with (a:=a) (n:=n). split; auto.
+        right. intros Neq. split. apply Hm. split; auto.
+        exists z, L. split; auto. split. apply ssuccs_imp_ssuccseq. apply H1.
+        split. apply min_new_at with (a:=a) (n:=n). split; auto. split; auto.
 
   intros Hrecv.
     assert (Cn' : exists L', a <st L' /\ L' <[node] n').
@@ -1233,8 +1233,8 @@ Proof.
 
     exists n', L'. split. left. apply path_edge_double. split; auto. apply Hm. 
     split; auto. split. auto. right.
-    intros Neq. split. apply Hm. exists n.
-    split. apply ssuccs_imp_ssuccseq. apply Hm. split. apply rt_refl. auto.
+    intros Neq. split. apply Hm. split; auto. exists n, L.
+    split. apply Hm. split. apply rt_refl. split. auto. split; auto.
 
    intros NNLn.
       assert (Hmin : has_min_elt (P_comp a L n)).
@@ -1255,9 +1255,10 @@ Proof.
         exists n', L'. split. left. apply path_edge_double; auto.
         split; auto. apply Hm. split; auto.
         split. auto.
-        right. intros Neq. split. apply Hm.
-        exists z. split; auto. split. apply ssuccs_imp_ssuccseq. apply H1.
-        apply min_new_at with (a:=a) (n:=n). split; auto.
+        right. intros Neq. split. apply Hm. split; auto.
+        exists z, L. split; auto. split. apply ssuccs_imp_ssuccseq. apply H1.
+        split.
+        apply min_new_at with (a:=a) (n:=n). split; auto. split; auto.
  Qed.
    
 End back_ward.

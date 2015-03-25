@@ -5,13 +5,14 @@ Definition not_proper_subterm (t:msg) :=
   exists (n': node) (L : msg), 
   t <st L -> t <> L -> r_node n' -> L <[node] n' -> False.
 
-Section TestComponent.
-Variable a t : msg.
-Variable n : node. 
+Definition test_component (a t h: msg) (n:node) (k:Key) : Prop :=
+  t = E h k /\ a <st t /\ t <[node] n /\ not_proper_subterm t.
 
-Definition test_component : Prop :=
-  exists (h:msg) (k:Key), t = E h k /\ a <st t /\ t <[node] n /\ not_proper_subterm t.   
+Definition test (x y : node) (a : msg) : Prop :=
+  unique a /\ orig_at x a /\ transformed_edge_for x y a.
 
-End TestComponent.
-Check not_proper_subterm.
-Check test_component.
+Definition incoming_test (x y : node) (a t h: msg) (k:Key) : Prop := 
+  t = E h k /\ ~ (PKeys k) /\ test_component a t h y k.
+  
+Definition outgoing_test (x y : node) (a t h : msg) (k k' : Key) : Prop :=
+  t = E h k /\ inv k k' /\ ~ (PKeys k') /\ test_component a t h x k.

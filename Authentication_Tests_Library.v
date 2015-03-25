@@ -107,7 +107,8 @@ End P7_1.
 Section Proposition_10.
   Variable p : path.
   Variable n : nat.
-  Hypothesis Htp : is_trans_path p.
+  Variable a : msg.
+  Hypothesis Htp : is_trans_path p a.
   Hypothesis Hn : n < length p - 1.
   Hypothesis Hcom : L p n <> L p (n+1).
   Hypothesis Pnode : p_node (nd p n).
@@ -115,7 +116,7 @@ Section Proposition_10.
   Lemma trans_path_ssuccs : 
       ssuccs (nd p n) (nd p (n+1)). 
   Proof.
-    destruct Htp as (H3,H4).
+    destruct Htp as (H2, (H3,H4)).
     destruct (H4 n)as (H41, H42).
     destruct H42. auto.
       apply False_ind. apply Hcom. auto.
@@ -130,7 +131,7 @@ Section Proposition_10.
   Lemma Proposition_10 :  ssuccs (nd p n) (nd p (n+1)) /\ 
     (DStrand (strand_of (nd p n)) \/ EStrand (strand_of (nd p n))).
   Proof.
-    destruct Htp as (Ha, Hb).
+    destruct Htp as (Ha, (Ha', Hb)).
     destruct (Hb n) as (Q1,Q2).
     split.
       apply trans_path_ssuccs.
@@ -156,7 +157,7 @@ Section Proposition_10.
 
     intro. apply False_ind. apply (CStrand_not_edge (strand_of (nd p n))).
     auto.
-    exists (nd p n). exists (nd p (n+1)). exists (L p n). exists (L p (n+1)).
+    exists (nd p n),(nd p (n+1)), a.
     split. auto.
     split. symmetry. apply ssuccs_same_strand. apply trans_path_ssuccs.
     split. apply Prop10_recv_xmit.
@@ -166,7 +167,7 @@ Section Proposition_10.
     
     intro. apply False_ind. apply (SStrand_not_edge (strand_of (nd p n))).
     auto.
-    exists (nd p n). exists (nd p (n+1)). exists (L p n). exists (L p (n+1)).
+    exists (nd p n),(nd p (n+1)), a.
     split. auto.
     split. symmetry. apply ssuccs_same_strand. apply trans_path_ssuccs.
     split. apply Prop10_recv_xmit.
@@ -185,17 +186,19 @@ End Proposition_10.
 Section Proposition_11.
 
 Lemma single_node_tp : 
-  forall (n:node) (m:msg), 
-    m <[node] n -> is_trans_path [(n,m)].
+  forall (n:node) (m a:msg), 
+    atomic a -> a <st m -> m <[node] n -> is_trans_path [(n,m)] a.
 Proof.
-  intros n m Hcom.
+  intros n m a Atom Ingred Hcom.
   unfold is_trans_path.
   simpl. split. left. unfold is_path. simpl. intros i Hcontra. 
   apply False_ind; omega.
 
+  split. auto.
   intros n0. split. intro Hn0. assert (n0=0). omega. rewrite H. 
   assert ( L [(n,m)] 0 = m). auto.
-  assert (nd [(n,m)] 0 = n). auto. congruence.
+  assert (nd [(n,m)] 0 = n). auto.
+  split; congruence.
 
   intros n1.
   apply False_ind. omega.
@@ -204,7 +207,7 @@ Qed.
 Definition p11_aux (n:node) (a t : msg) p : Prop := 
   let ln := fst (split p) in 
   let lm := snd (split p) in 
-  is_trans_path p /\ 
+  is_trans_path p a /\ 
   orig_at (nth_node 0 ln) a /\
   nth_node (length p - 1) ln = n /\ 
   nth_msg (length p -1) lm = t /\
@@ -217,7 +220,7 @@ Definition p11_aux2 (n:node): Prop :=
 Lemma tpath_extend : 
   forall x a t, a <st t -> t <[node] x ->
   (exists (x':node) (t':msg), (path_edge x' x \/ (ssuccs x' x  /\ xmit x' /\ xmit x /\ orig_at x' a)) /\
-  (a <st t' /\ t' <[node] x' /\ (t' = t \/ (t'<>t -> transformed_edge x' x t' t))) /\ 
+  (a <st t' /\ t' <[node] x' /\ (t' = t \/ (t'<>t -> transformed_edge x' x a))) /\ 
   exists p, p11_aux x' a t' p) ->
   exists p, p11_aux x a t p.
 Proof.
@@ -225,9 +228,9 @@ intros x a t Sat Ntx (x', (t', (C1, (C2, (p, C4))))).
 unfold p11_aux in *.
 destruct C4 as (C5, (C6, (C7, (C8, C9)))).
 assert (S : is_trans_path [(nth_node (length p - 1) (fst (split p)), 
-                            nth_msg (length p - 1) (snd (split p))); (x,t)] /\
+                            nth_msg (length p - 1) (snd (split p))); (x,t)] a /\
                             orig_at (nth_node (length p - 1) (fst (split p))) a
-            \/ is_trans_path (p++[(x,t)])).
+            \/ is_trans_path (p++[(x,t)]) a).
 apply transpath_extend; auto. rewrite C7.
   case C1.
   intro. left. auto.
@@ -261,7 +264,7 @@ exact wf_prec.
   assert (Orig : orig_at x a \/ ~ orig_at x a). tauto.
   case Orig.
   intros Oxa. exists ([(x, t)]). split.
-  apply single_node_tp with (n:=x) (m:=t). auto.
+  apply single_node_tp with (n:=x) (m:=t); auto.
   split; auto. split; auto. split; auto.
   intros. simpl in H. assert (i=0). omega. rewrite H0;auto.
 
@@ -269,13 +272,13 @@ exact wf_prec.
   Focus 2. intro Recvx. assert (exists y, msg_deliver y x).
   apply was_sent; auto. apply tpath_extend; auto. destruct H as (y, Dyx).
   exists y, t. split. left. apply path_edge_single. auto.
-  split. split. auto. split. auto. apply msg_deliver_comp with (n2:=x).
+  split. split. auto. split.  apply msg_deliver_comp with (n2:=x). 
   split; auto. left; auto. apply IH. apply deliver_prec; auto. auto.
   auto. apply msg_deliver_comp with (n2:=x). split; auto.
 
   intros. 
     assert (exists (x':node) (t':msg), (path_edge x' x \/ (ssuccs x' x  /\ xmit x' /\ xmit x /\ orig_at x' a)) /\
-           (a <st t' /\ t' <[node] x' /\ (t' = t \/ (t'<>t -> transformed_edge x' x t' t)))).
+           (a <st t' /\ t' <[node] x' /\ (t' = t \/ (t'<>t -> transformed_edge x' x a)))).
   apply backward_construction; auto. destruct H0 as (y, (Ly, (H1, H2))).
   apply tpath_extend; auto. exists y, Ly. split. apply H1.
   split. apply H2.

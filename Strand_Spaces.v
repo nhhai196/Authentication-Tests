@@ -349,24 +349,23 @@ Section Trans_path.
   Definition nd (n:nat) := nth_node n ln.
   Hint Resolve nd.
 
-  Definition transformed_edge (x y : node) (Lx Ly : msg) :Prop :=
-    ssuccs x y /\ 
-    exists z, ssuccseq x z /\ ssuccseq z y /\ new_at Ly z.
+  Definition transformed_edge (x y : node) (a:msg) : Prop :=
+    ssuccs x y /\ atomic a /\
+    exists z Ly, ssuccs x z /\ ssuccseq z y /\ new_at Ly z /\ a <st Ly /\ Ly <[node] y.
 
-  Definition transformed_edge_for (x y : node) (Lx Ly a :msg) : Prop :=
-    transformed_edge x y Lx Ly /\ atomic a /\
-    xmit x /\ recv y /\ a <st Lx /\ a <st Ly.
+  Definition transformed_edge_for (x y : node) (a :msg) : Prop :=
+    transformed_edge x y a /\ xmit x /\ recv y.
 
-  Definition transforming_edge_for (x y : node) (Lx Ly a :msg) : Prop :=
-    transformed_edge x y Lx Ly /\ atomic a /\
-    recv x /\ xmit y /\ a <st Lx /\ a <st Ly.
+  Definition transforming_edge_for (x y : node) (a :msg) : Prop :=
+    transformed_edge x y a /\ recv x /\ xmit y.
 
   Definition is_trans_path : Prop := 
     (is_path ln \/ (ssuccs (nd 0) (nd 1) /\  xmit (nd 0) /\
                     xmit (nd 1) /\ is_path (tl ln))) /\
-    forall (n:nat), (n < length p -> (L n) <[node] (nd n)) /\
+    atomic a /\
+    forall (n:nat), (n < length p -> a <st (L n) /\ (L n) <[node] (nd n)) /\
                     (n < length p - 1 -> (L n = L (n+1) \/ (L n <> L (n+1) -> 
-                    transformed_edge (nd n) (nd (n+1)) (L n) (L (n+1))))).
+                    transformed_edge (nd n) (nd (n+1)) a))).
 End Trans_path.
 
 (*********************************************************************)
