@@ -6,6 +6,25 @@ Require Import Lists.List Relation_Definitions Relation_Operators.
 Require Import List_Library.
 Import ListNotations.
 
+(** * Proposition 6 *)
+Lemma P6_1 : forall p, des_path_not_key p -> falling_path p.
+Proof.
+  intros p Dp. destruct Dp.
+  split. apply H.
+  intros i Hlt. destruct H as (pp, H). destruct pp. 
+  unfold is_path in H1.
+  assert (path_edge (nth_node i p) (nth_node (i + 1) p)).
+  apply (H1 i); auto. inversion H3. 
+  assert (msg_of (nth_node i p) = msg_of (nth_node (i+1) p)).
+  apply msg_deliver_msg_eq with (y:=nth_node (i+1) p). auto. 
+  rewrite H5. apply ingred_refl. destruct H4 as (H5, (H6, H7)).
+Admitted.
+
+Lemma P6_2 : forall p, cons_path_not_key p -> rising_path p.
+Admitted.  
+  
+(*********************************************************************)
+
 (** * Proposition 7 *)
 Section P7_1.
   Variable i : nat.
@@ -61,7 +80,7 @@ Section P7_1.
       split; auto. split. apply P7_1_aux1. apply pi1_ingred_pi.
 
     auto.
-    Qed.  
+  Qed.  
 
 Section P7_1_a.
   Variable h : msg.
