@@ -319,7 +319,7 @@ Definition cons_path_not_key (p : list node) : Prop :=
   cons_path p /\ (forall i, i < length p - 1 -> 
   des_edge (nth_node i p) (nth_node (i+1) p) ->  
   EStrand (strand_of (nth_node i p)) -> 
-  exists h , msg_of (nth_node i p) = h).
+  exists k , msg_of (nth_node i p) = K k -> False).
 
 Definition des_path (p :list node) : Prop := 
   p_path p /\ (forall i, i < length p - 1 -> 
@@ -330,7 +330,7 @@ Definition des_path_not_key (p : list node) : Prop :=
   des_path p /\ (forall i, i < length p - 1 -> 
   des_edge (nth_node i p) (nth_node (i+1) p) ->  
   DStrand (strand_of (nth_node i p)) -> 
-  exists h k, msg_of (nth_node i p) = E h k).
+  exists k, msg_of (nth_node i p) = K k -> False).
 
 End Path.
 
@@ -393,6 +393,11 @@ Section Trans_path.
     forall (n:nat), (n < length p -> a <st (L n) /\ (L n) <[node] (nd n)) /\
                     (n < length p - 1 -> (L n = L (n+1) \/ (L n <> L (n+1) -> 
                     transformed_edge (nd n) (nd (n+1)) a))).
+  
+  Definition not_traverse_key : Prop :=
+    forall i, i < length p -> (DStrand (strand_of (nd i)) \/ EStrand (strand_of (nd i))) ->
+    exists k, msg_of (nd i) =  K k -> False.
+
 End Trans_path.
 
 (*********************************************************************)
