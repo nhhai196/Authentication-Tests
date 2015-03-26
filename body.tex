@@ -18,11 +18,9 @@ more complicated. Though authentication tests are proved in the paper,
 they have not been formally verified.  As we know that once lemma or a
 theorem has been proved in some proof assistant language like Coq, we
 will have a very strong assurance that it is true - much more than
-what we usually have when doing a pen-and-paper proof.
+what we usually have when doing a pen-and-paper proof. In addition, we found that there are few papers and projects using Coq to verify security goal of cryptographic protocols and to particularly formalize strand spaces, which is a well-known approach to cryptographic protocols.
 
-In addition, we found that there are few papers and projects using Coq to verify security goal of cryptographic protocols and to particularly formalize strand spaces, which is a well-known approach to cryptographic protocols.
-
-In this project we will prove authentication tests under strand space formalism approach by using the Coq proof assistant. First, we will formalize strand spaces and all stuffs needed for proving authentications tests like components,transformation paths, penetrable keys, and so on... Then, we will give detailed formal proofs of all relevant lemmas, theorems, and finally authentication tests.
+In this project we will prove authentication tests under strand space formalism approach by using the Coq proof assistant. First, we will formalize strand spaces and all stuffs needed for proving authentications tests like components,transformation paths, penetrable keys. Then, we will give detailed formal proofs of all relevant lemmas, theorems, and finally authentication tests.
 
 This project will help researchers in security area have more
 confidence in using the result of authentication tests since they are
@@ -74,7 +72,7 @@ towards Haskell and Ocaml for efficient execution of algorithms and
 linking with other libraries.
 
 The Coq compiler automatically checks the correctness of definitions
-(well-formed sets, terminating functions...) and of proofs
+(well-formed sets, terminating functions...) and of proofs.
 
 As a proof assistant, Coq is similar to higher order logic (HOL)
 systems, a family of interactive theorem prover based on Church's HOL
