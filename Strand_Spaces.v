@@ -97,55 +97,6 @@ Definition xmit (n:node) : Prop := exists (m:msg), smsg_of n = + m.
 
 Definition recv (n:node) : Prop := exists (m:msg), smsg_of n = - m.
 
-(*********************************************************************)
-
-(** * Edges *)
-(** ** Inter-strand Edges *)
-Inductive msg_deliver : relation node :=
-  | msg_deliver_step : forall (x y : node) (m:msg), 
-    smsg_of x = +m /\ smsg_of y = -m /\ strand_of(x) <> strand_of(y)
-    -> msg_deliver x y.
-Hint Constructors msg_deliver.
-Notation "x --> y" := (msg_deliver x y) (at level 0, right associativity) : ss_scope.
-
-(** ** Iner-strand Edges - Strand ssuccessor *)
-Inductive ssucc : relation node :=
-  | ssucc_step : forall (x y : node), strand_of(x) = strand_of(y) /\
-    index_of(x) + 1 = index_of(y) -> ssucc x y.
-Hint Constructors ssucc.     
-Notation "x ==> y" := (ssucc x y) (at level 0, right associativity) : ss_scope.
-
-(** Transitive closure of strand ssuccessor *)
-Definition ssuccs : relation node := clos_trans node ssucc.
-Notation "x ==>+ y" := (ssuccs x y) (at level 0, right associativity) : ss_scope.
-
-(** Reflexive Transitive Closure of strand successor *)
-Definition ssuccseq : relation node := clos_refl_trans node ssucc.
-
-(** ** Edges on Strand *)
-Inductive strand_edge : relation node :=
-  | strand_edge_single : forall x y, msg_deliver x y -> strand_edge x y
-  | strand_edge_double : forall x y, ssucc x y -> strand_edge x y.
-Hint Constructors strand_edge.
-
-(** Transitive closure of edge *)
-Definition prec := clos_trans node strand_edge.
-Notation "x ==>* y" := (ssuccseq x y) (at level 0, right associativity) : ss_scope.
-
-(*********************************************************************)
-
-(** * Origination *)
-
-Definition orig_at (n:node) (m:msg) : Prop :=
-  xmit(n) /\  (ingred m (msg_of n)) /\
-  (forall (n':node), ((ssuccs n' n) -> 
-  (ingred m (msg_of n')) -> False)).
-
-Definition non_orig (m:msg) : Prop := forall (n:node), ~orig_at n m.
-
-Definition unique (m:msg) : Prop :=
-  (exists (n:node), orig_at n m) /\
-  (forall  (n n':node),(orig_at n m) /\ (orig_at n' m) -> n=n').
 
 (*********************************************************************)
 
@@ -208,6 +159,69 @@ Section PenetratorStrand.
 End PenetratorStrand.
 
 (*********************************************************************)
+
+(** * Edges *)
+(** ** Inter-strand Edges *)
+Inductive msg_deliver : relation node :=
+  | msg_deliver_step : forall (x y : node) (m:msg), 
+    smsg_of x = +m /\ smsg_of y = -m /\ strand_of(x) <> strand_of(y)
+    -> msg_deliver x y.
+Hint Constructors msg_deliver.
+Notation "x --> y" := (msg_deliver x y) (at level 0, right associativity) : ss_scope.
+
+(** ** Iner-strand Edges - Strand ssuccessor *)
+Inductive ssucc : relation node :=
+  | ssucc_step : forall (x y : node), strand_of(x) = strand_of(y) /\
+    index_of(x) + 1 = index_of(y) -> ssucc x y.
+Hint Constructors ssucc.     
+Notation "x ==> y" := (ssucc x y) (at level 0, right associativity) : ss_scope.
+
+(** Transitive closure of strand ssuccessor *)
+Definition ssuccs : relation node := clos_trans node ssucc.
+Notation "x ==>+ y" := (ssuccs x y) (at level 0, right associativity) : ss_scope.
+
+(** Reflexive Transitive Closure of strand successor *)
+Definition ssuccseq : relation node := clos_refl_trans node ssucc.
+
+(** ** Edges on Strand *)
+Inductive strand_edge : relation node :=
+  | strand_edge_single : forall x y, msg_deliver x y -> strand_edge x y
+  | strand_edge_double : forall x y, ssucc x y -> strand_edge x y.
+Hint Constructors strand_edge.
+
+(** Transitive closure of edge *)
+Definition prec := clos_trans node strand_edge.
+Notation "x ==>* y" := (ssuccseq x y) (at level 0, right associativity) : ss_scope.
+
+(** ** Constructive and Destructive Edges *)
+Inductive cons_edge : relation node :=
+  | cons_e : forall x y, ssuccs x y -> EStrand (strand_of x)  -> cons_edge x y
+  | cons_c : forall x y,  ssuccs x y -> CStrand (strand_of x) -> cons_edge x y.
+Hint Constructors cons_edge.
+
+Inductive des_edge : relation node :=
+  | des_d : forall x y, ssuccs x y -> DStrand (strand_of x)  -> des_edge x y
+  | des_s : forall x y,  ssuccs x y -> SStrand (strand_of x) -> des_edge x y.
+Hint Constructors des_edge.
+
+(*********************************************************************)
+
+(** * Origination *)
+
+Definition orig_at (n:node) (m:msg) : Prop :=
+  xmit(n) /\  (ingred m (msg_of n)) /\
+  (forall (n':node), ((ssuccs n' n) -> 
+  (ingred m (msg_of n')) -> False)).
+
+Definition non_orig (m:msg) : Prop := forall (n:node), ~orig_at n m.
+
+Definition unique (m:msg) : Prop :=
+  (exists (n:node), orig_at n m) /\
+  (forall  (n n':node),(orig_at n m) /\ (orig_at n' m) -> n=n').
+
+(*********************************************************************)
+
+
 (** * Axioms *)
 (*  ******** *)
 
@@ -270,42 +284,54 @@ Section Path.
   Definition is_path (p:list node) : Prop := 
     forall i, i < length(p) - 1 -> path_edge (nth_node i p) (nth_node (i+1) p).
 
-  (*Inductive is_path' : list node -> Prop := 
-    | path_nil : forall (p:list node), p = [] -> is_path' p
-    | path_step : forall p n, is_path' p ->  
-      path_edge n (nth_node 0 p) -> is_path' (n::p). *)
-
 (** ** Axiom for paths *)
 (** All paths begin on a positive node and end on a negative node *)
   Axiom path_begin_pos_end_neg : forall (p:list node),
     xmit(nth_node 0 p) /\ recv(nth_node (length(p)-1)  p).
 
-  (** ** Penetrator Paths *)
-  Definition p_path (p:list node): Prop := is_path p /\ forall i,
-    (i > 0 /\ i < length p - 1) -> p_node (nth_node i p).
+(** ** Penetrator Paths *)
+Definition p_path (p:list node): Prop := is_path p /\ forall i,
+  (i > 0 /\ i < length p - 1) -> p_node (nth_node i p).
+
+Lemma p_path_cons_or_des : 
+  forall p, p_path p -> r_node (nth_node 0 p) ->
+  (forall i, i < length p - 1 -> 
+  cons_edge (nth_node i p) (nth_node (i+1) p) \/
+  des_edge (nth_node i p) (nth_node (i+1) p)).	
+Admitted.
 
 (** ** Falling and rising paths *)
   Definition falling_path ( p : list node) : Prop := 
     p_path p /\ forall i, i < length(p)-1 ->
     ingred (msg_of (nth_node (i+1) p)) (msg_of (nth_node i p)).
 
-  (*Inductive falling_path : list node -> Prop :=
-    | falling_path_nil : forall p, p = [] -> falling_path p
-    | falling_path_step : forall p n, is_path p -> 
-      path_edge (nth_node (length p - 1) p) n ->
-      ingred (msg_of (nth_node (length p - 1) p)) (msg_of n) -> falling_path p.*)
-
-
   Definition rising_path (p : list node) : Prop := 
     p_path p /\ forall i, i < length(p)-1 ->
     ingred (msg_of (nth_node i p)) (msg_of (nth_node (i+1) p)).
 
-  (*Lemma path_imp_path_edge : 
-    forall p, is_path' p -> forall n, n < length p - 1 ->
-    path_edge (nth_node n p) (nth_node (n+1) p).
-  Proof.
-  intros p Pa. inversion Pa. intros. subst. simpl in *. intros. omega.
-  intros. simpl in *. subst. *)
+(** ** Destructive and Constructive Paths *)
+Definition cons_path (p :list node) : Prop := 
+  p_path p /\ (forall i, i < length p - 1 -> 
+               ssuccs (nth_node i p) (nth_node (i+1) p) ->
+               cons_edge (nth_node i p) (nth_node (i+1) p)).
+
+Definition cons_path_not_key (p : list node) : Prop := 
+  cons_path p /\ (forall i, i < length p - 1 -> 
+  des_edge (nth_node i p) (nth_node (i+1) p) ->  
+  EStrand (strand_of (nth_node i p)) -> 
+  exists h , msg_of (nth_node i p) = h).
+
+Definition des_path (p :list node) : Prop := 
+  p_path p /\ (forall i, i < length p - 1 -> 
+               ssuccs (nth_node i p) (nth_node (i+1) p) ->
+               des_edge (nth_node i p) (nth_node (i+1) p)).
+
+Definition des_path_not_key (p : list node) : Prop := 
+  des_path p /\ (forall i, i < length p - 1 -> 
+  des_edge (nth_node i p) (nth_node (i+1) p) ->  
+  DStrand (strand_of (nth_node i p)) -> 
+  exists h k, msg_of (nth_node i p) = E h k).
+
 End Path.
 
 (*********************************************************************)
@@ -351,7 +377,8 @@ Section Trans_path.
 
   Definition transformed_edge (x y : node) (a:msg) : Prop :=
     ssuccs x y /\ atomic a /\
-    exists z Ly, ssuccs x z /\ ssuccseq z y /\ new_at Ly z /\ a <st Ly /\ Ly <[node] y.
+    exists z Ly, ssuccs x z /\ ssuccseq z y /\
+    new_at Ly z /\ a <st Ly /\ Ly <[node] y.
 
   Definition transformed_edge_for (x y : node) (a :msg) : Prop :=
     transformed_edge x y a /\ xmit x /\ recv y.
@@ -381,204 +408,5 @@ Parameter default_smsg : smsg.
   intros n Pn. auto.
   Qed.
  
-(*********************************************************************)
-
-
-(*
-
-
-
-(*********************************************************************)
-
-(** * Edges *)
-(** ** Transformed edges *)
-(** ** Transforming edges *)
-
-(*********************************************************************)
-
-(** * Proposition 11 *)
-
-Section Proposition11.
-  Variable a : msg.
-  Variable n : node.
-  Definition P_ingred : node -> Prop:=
-    fun (n':node) => ssuccs n' n /\ ingred a (msg_of n').
-
-(* Since ssuccs implies prec, if a element x is prec-accessible
-then it is ssuccs-accessible *)
-  Lemma acc_prec_ssuccs : forall x, Acc prec x -> Acc ssuccs x.
-  Proof.
-    intros x Hprec.
-    induction Hprec. constructor.
-    intros. apply H0.
-    apply ssuccs_prec; auto.
-  Qed.
-
-(* Ssuccs is a well-founded relation *)
-(* Notice that every sub-relation of a well-founded relation is 
-also well-founded *)
-  Lemma wf_ssuccs : well_founded ssuccs.
-  Proof.
-    unfold well_founded. intros x.
-    apply acc_prec_ssuccs.
-    apply wf_prec.
-  Qed.
-
-  Lemma ingred_of_earlier : 
-    forall (n':node), 
-      a <st (msg_of n) -> xmit n -> ~ orig_at n a -> exists n', P_ingred n'.
-  Proof.
-    intros n' Hst Hxmit Hnorig.
-    apply Peirce.
-    intros.
-    apply False_ind.
-    apply Hnorig. unfold orig_at.
-    repeat split.
-    auto. 
-    auto.
-    intros n1 Hssuc Hastn1. apply H.
-    exists n1. split; auto.
-  Qed.
-
-  Lemma not_orig_exists : 
-    a <st (msg_of n) -> xmit n -> ~ orig_at n a -> has_min_elt P_ingred.
-  Proof.
-    intros Hxmit Hst Hnorig.
-    apply always_min_elt.
-    apply ingred_of_earlier; assumption.
-  Qed.
-
-End Proposition11. 
-
-(** Backward construction *)
-Lemma backward_construction : 
-  forall (n:node) (a L:msg), 
-    atomic a -> L <[node] n -> ~ orig_at n a -> a <st L ->
-    exists (n':node) (L':msg), 
-      (msg_deliver n' n \/ ssuccs n' n) /\ a <st L' /\ L' <[node] n' /\ 
-      (L' = L \/ (ssuccs n' n /\ new_at L n)).
-Proof.
-  intros n a L Hatom Hcom Hnorig Hst.
-  assert (Hx_r : xmit n \/ recv n). apply xmit_or_recv.
-  case Hx_r.
-  Focus 2. intros Hrecv.
-  assert (Hex : exists (n':node), msg_deliver n' n). 
-  apply was_sent. auto.
-  destruct Hex as (n', Hmsg_deli).
-  exists n'; exists L. 
-  split. left; auto.
-  split. exact Hst.
-  split. apply msg_deliver_comp with (n1:=n') (n2:=n).
-  split; assumption.
-  left. trivial.  
-
-  intros Hxmit.
-  assert (Hdec : new_at L n \/ ~(new_at L n)). tauto.
-  case Hdec.
-  intros Hnew. 
-  assert (Hex2 :exists n1, ssuccs n1 n /\ ingred a (msg_of n1)).
-  apply ingred_of_earlier. repeat split; auto.
-  apply ingred_trans with (y:=L).
-  assumption.
-  apply comp_of_node_imp_ingred; assumption.
-  assumption.
-  assumption.
-  destruct Hex2 as (n1, (Hssucc, Hastn1)).
-  assert (HexL1 : exists L1, ingred a L1 /\ comp_of_node L1 n1).
-  apply ingred_exists_comp_of_node; assumption.
-  destruct HexL1 as (L1, (H1, H2)).
-  exists n1; exists L1.
-  split. right. assumption.
-  split. assumption.
-  split. assumption.
-  right. split; auto.
-
-  intros Hnnew.
-  assert (Hex : exists n', ssuccs n' n /\ L <[node] n').
-  apply not_new_exists; auto.
-  destruct Hex as (n', (Hssucc, Hn)).
-  exists n'; exists L.
-  split. right. auto.
-  split. auto.
-  split. assumption.
-  left; trivial.
-Qed.
-
-Definition Proposition_11_aux : node -> Prop := 
-  fun (n':node) => 
-    forall (a t:msg), 
-      atomic a -> a <st t /\ t <[node] n' -> 
-      exists p, let ln := fst (split p) in 
-        let lm := snd (split p) in 
-          is_trans_path p /\ 
-          orig_at (nth_node 0 ln) a /\
-          nth_node (length p - 1) ln = n' /\ 
-          nth_msg (length p -1) lm = t /\
-          forall (i:nat), i < length p -> a <st (nth_msg i lm).
-
-(* The main result *)
-Lemma proposition11 : 
-  forall (n':node), Proposition_11_aux n'.
-Proof.
-  apply well_founded_ind with (R:=prec).
-  exact wf_prec.
-  intros.
-  unfold Proposition_11_aux.
-  unfold Proposition_11_aux in H.
-  intros.
-  destruct H1 as (H1, H2).
-  assert (orig_at x a \/ ~ orig_at x a). tauto.
-  case H3.
-  intros.
-  exists (cons (x, t) nil).
-  simpl. split.
-  apply anode_trans_path with (n:=x) (t:=t). exact H2.
-  split; auto; split; auto; split; auto.
-  intros.
-  assert (i=0). omega.
-  rewrite H6;auto.
-
-  intros.
-  assert (Hex : exists (n':node) (L':msg), 
-    (msg_deliver n' x \/ ssuccs n' x) /\ a <st L' /\ L' <[node] n' /\ 
-    (L' = t \/ (ssuccs n' x /\ new_at t x))).
-  apply backward_construction; assumption.
-  destruct Hex as (n', (L', (Hor, (Hst, (Hcom, Hlast))))).
-  assert (IH : forall a t : msg,
-    atomic a ->
-    a <st t /\ t<[node]n' ->
-    exists p : list (node * msg),
-      is_trans_path p /\
-      orig_at (nth_node 0 (fst (split p))) a /\
-      nth_node (length p - 1) (fst (split p)) = n' /\
-      nth_msg (length p - 1) (snd (split p)) = t /\
-      (forall i : nat, i < length p -> a <st nth_msg i (snd (split p)))).
-  apply H with (y:= n'). case Hor.
-  apply msg_deliver_prec.
-  apply ssuccs_prec.
-  assert (Hex2 : exists p : list (node * msg),
-    is_trans_path p /\
-    orig_at (nth_node 0 (fst (split p))) a /\
-    nth_node (length p - 1) (fst (split p)) = n' /\
-    nth_msg (length p - 1) (snd (split p)) = L' /\
-    (forall i : nat, i < length p -> a <st nth_msg i (snd (split p)))).
-  apply IH. assumption. split; assumption.
-  destruct Hex2 as (p0, (Hex2, (Hex3, (Hex4, (Hex5, Hex6))))).
-  assert (orig_at n' a \/ ~orig_at n' a). tauto.
-  case H5.
-  intro Horign'.
-  exists ((n', L')::(x,t)::nil). simpl.
-  split. admit.
-  split. auto.
-  split. auto.
-  split. auto.
-  intros. assert (i=0 \/ i=1). omega.
-  case H7. 
-  intro. subst; auto.
-  intro; subst; auto.
-  intro Hnorig.
-  exists (p0++(n',L')::nil).
-Admitted.
-*)
 (*********************************************************************)
 
