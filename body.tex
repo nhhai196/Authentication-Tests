@@ -1,5 +1,5 @@
-\chapter{Introduction.}
-\section{Objectives and Project Motivation.}
+\chapter{Introduction}
+\section{Objectives and Project Motivation}
 Cryptographic protocols are intended to let principals communicate
 securely over a communication protocol which are designed to provide
 various kinds of security assurances. An important security goal of
@@ -9,7 +9,7 @@ a nonce. Many research papers about authentication have published. One
 of them is “Authentication Tests and the Structure of Bundles” by
 Joshua Guttman and Javier Thayer. The main idea of authentication
 tests is that if a principal in a cryptographic protocol creates and
-transmits a message containing a new value v, and later receives v
+transmits a message containing a new value $v$, and later receives $v$
 back in a different cryptographic context then it can be concluded
 that some principal processing the relevant key has received and
 transformed the message in which  was emitted. The authentication
@@ -18,11 +18,11 @@ more complicated. Though authentication tests are proved in the paper,
 they have not been formally verified.  As we know that once lemma or a
 theorem has been proved in some proof assistant language like Coq, we
 will have a very strong assurance that it is true - much more than
-what we usually have when doing a pen-and-paper proof.\\
+what we usually have when doing a pen-and-paper proof.
 
-In addition, we found that there are few papers and projects using Coq to verify security goal of cryptographic protocols and to particularly formalize strand spaces, which is a well-known approach to cryptographic protocols.\\
+In addition, we found that there are few papers and projects using Coq to verify security goal of cryptographic protocols and to particularly formalize strand spaces, which is a well-known approach to cryptographic protocols.
 
-In this project we will prove authentication tests under strand space formalism approach by using the Coq proof assistant. First, we will formalize strand spaces and all stuffs needed for proving authentications tests like components,transformation paths, penetrable keys, and so on... Then, we will give detailed formal proofs of all relevant lemmas, theorems, and finally authentication tests.\\
+In this project we will prove authentication tests under strand space formalism approach by using the Coq proof assistant. First, we will formalize strand spaces and all stuffs needed for proving authentications tests like components,transformation paths, penetrable keys, and so on... Then, we will give detailed formal proofs of all relevant lemmas, theorems, and finally authentication tests.
 
 This project will help researchers in security area have more
 confidence in using the result of authentication tests since they are
@@ -31,19 +31,28 @@ can easily extract certain modules for their purpose. For example, the
 formalization of strand spaces can be used as a frame work for later
 research using strand space approach.
   
-\section{Strand Space Overview.}
-In this section, we briefly summarize the ideas behind the strand space model. The Coq development in the next chapter will provides precise definitions.\\
-A strand spaces is a set of strands; one may think of a strand space as containing all legitimate executions together with all the actions that a penetrator may apply to the messages contained in these executions.\\
-A strand is a sequence of events that a single principal, either a legitimate principal or a penetrator, may engage in. The height of a strand is the number of nodes on that strand. Each strand is a sequence of message transmissions and receptions with specific values such as nonces and keys. Transmission of a term $t$ is represented as $+t$ and reception of a term $t$ is represented as $-t$. Each element of a strand is called a node. Given a strand $s$, $(s,i)$ is the $i^th$ node on $s$. We say that $n \Rightarrow n'$ if $n=(s,i)$ and $n'=(s,i+1)$. Thus, the relation $\Rightarrow^+$ between two nodes is the transitive closure of the relation $\Rightarrow$. The relation $n \rightarrow n'$ represents the inter-strand communication; it means that $term(n)=+t$ and $term(n')=-t$; here $term(n)$ denotes the signed (unsigned) message at the node $n$.\\
-Let $A$ be the set of all possible messages that can be exchanged between principals in a protocol. We call elements of $A$ terms. $A$ is freely generated from two disjoint sets, set of texts $T$ and set of cryptographic keys $K$, by concatenations $encr : K \times A \rightarrow A$ and encryptions $join : A \times A \rightarrow A$. Hence, $A$ is closed under concatenation and encryption. The set $K$ is equipped with an injective unary operator $inv : K \rightarrow K$ which maps each member of asymmetric key pair to the other and maps a symmetric key to itself.\\
-A signed term is a pair of a sign $\sigma \in {+,-}$ and a term t, written either $<\sigma,t>$ or $+t$ or $-t$.\\
-A term $t_1$ is a subterm of another term $t_2$, denoted as $t_1 \sqsubset t_2$, if we can get $t_2$ from $t_1$ by repeatedly concatenating with arbitrary terms and encrypting with arbitrary keys. For example, $A, N_a$ are subterms of ${|N_aA|}_K$ but $K$ is not.\\
-Another important concept under strand space is origination. We say that a term t originates at a node n if n is a transmission node, $t \sqsubset term(n)$, and t is not a sub-term of any earlier node of $n$; hence, $n$ is the first node in its strand includes $t$. A node is called uniquely originating if it is originated on only one node over all strands. \\
-A bundle is a casually well-founded collection of nodes and two relations $\Rightarrow$ and $\rightarrow$. It represents the actual protocol interactions. In a bundle, when a a strand receives a message $m$, there is a unique node transmitting $m$ from which the message was immediately  received. In contrast, when a strand transmits a message $m$, many strands or none may immediately receive $m$. The height of a strand in a bundle is the number of nodes on the strand that are in the bundle.\\
-The penetrator's powers are characterized by the set of compromised keys which are initially known to penetrator, and a set of penetrator strands that allow the penetrator to generate new messages. The set of compromised keys typically would contain all public keys, all private keys of penetrators, and all symmetric keys initially shared between the penetrator and principals playing by the protocol rules. The atomic actions available to penetrator are encoded in a set of penetrator strands. We partition penetrator strands according to the operations they exemplify. E-strands encrypt when given a key and a plain-text; D-strands decrypt when given a decryption key and matching cipher-text; C-strands concatenate terms; S-strands separate terms; M-strands emit known atomic text or guess; and K-strands emit keys from a set of known keys.\\
+\section{Strand Space Overview}
+In this section, we briefly summarize the ideas behind the strand space model. The Coq development in the next chapter will provides precise definitions.
+
+A strand spaces is a set of strands; one may think of a strand space as containing all legitimate executions together with all the actions that a penetrator may apply to the messages contained in these executions.
+
+A strand is a sequence of events that a single principal, either a legitimate principal or a penetrator, may engage in. The height of a strand is the number of nodes on that strand. Each strand is a sequence of message transmissions and receptions with specific values such as nonces and keys. Transmission of a term $t$ is represented as $+t$ and reception of a term $t$ is represented as $-t$. Each element of a strand is called a node. Given a strand $s$, $(s,i)$ is the $i^th$ node on $s$. We say that $n \Rightarrow n'$ if $n=(s,i)$ and $n'=(s,i+1)$. Thus, the relation $\Rightarrow^+$ between two nodes is the transitive closure of the relation $\Rightarrow$. The relation $n \rightarrow n'$ represents the inter-strand communication; it means that $term(n)=+t$ and $term(n')=-t$; here $term(n)$ denotes the signed (unsigned) message at the node $n$.
+
+Let $A$ be the set of all possible messages that can be exchanged between principals in a protocol. We call elements of $A$ terms. $A$ is freely generated from two disjoint sets, set of texts $T$ and set of cryptographic keys $K$, by concatenations $encr : K \times A \rightarrow A$ and encryptions $join : A \times A \rightarrow A$. Hence, $A$ is closed under concatenation and encryption. The set $K$ is equipped with an injective unary operator $inv : K \rightarrow K$ which maps each member of asymmetric key pair to the other and maps a symmetric key to itself.
+
+A signed term is a pair of a sign $\sigma \in {+,-}$ and a term t, written either $<\sigma,t>$ or $+t$ or $-t$.
+
+A term $t_1$ is a subterm of another term $t_2$, denoted as $t_1 \sqsubset t_2$, if we can get $t_2$ from $t_1$ by repeatedly concatenating with arbitrary terms and encrypting with arbitrary keys. For example, $A, N_a$ are subterms of ${|N_aA|}_K$ but $K$ is not.
+
+Another important concept under strand space is origination. We say that a term t originates at a node n if n is a transmission node, $t \sqsubset term(n)$, and t is not a sub-term of any earlier node of $n$; hence, $n$ is the first node in its strand includes $t$. A node is called uniquely originating if it is originated on only one node over all strands.
+
+A bundle is a casually well-founded collection of nodes and two relations $\Rightarrow$ and $\rightarrow$. It represents the actual protocol interactions. In a bundle, when a a strand receives a message $m$, there is a unique node transmitting $m$ from which the message was immediately  received. In contrast, when a strand transmits a message $m$, many strands or none may immediately receive $m$. The height of a strand in a bundle is the number of nodes on the strand that are in the bundle.
+
+The penetrator's powers are characterized by the set of compromised keys which are initially known to penetrator, and a set of penetrator strands that allow the penetrator to generate new messages. The set of compromised keys typically would contain all public keys, all private keys of penetrators, and all symmetric keys initially shared between the penetrator and principals playing by the protocol rules. The atomic actions available to penetrator are encoded in a set of penetrator strands. We partition penetrator strands according to the operations they exemplify. E-strands encrypt when given a key and a plain-text; D-strands decrypt when given a decryption key and matching cipher-text; C-strands concatenate terms; S-strands separate terms; M-strands emit known atomic text or guess; and K-strands emit keys from a set of known keys.
+
 Important units for protocol correctness are components. A term $t$ is a component of another term $t'$ if $t \sqsubset t'$, t is nt a concatenated term, and for every $s \neq t$ such that $t \sqsubset s \sqsubset t'$, $s$ is a concatenated term. Thus, a component is either atomic value or an encryption. A term $t$ is new at a node $n=<s,i>$ if t is a component of $term(n)$ but $t$ is not a component of node $<s,j>$ for every $j < i$. A component is new even if it has occurred earlier as a nested subterm of some larger component. When a component occurs new in a regular node but was a subterm of some previous node, then the principal executing that strand has done some cryptographic work to extract it as a new component. 
 
-\section{The Coq Proof Assistant Overview.}
+\section{The Coq Proof Assistant Overview}
 \subsection{What is Coq?}
 We briefly describe what the Coq proof assistant is in this section.
 
@@ -151,9 +160,9 @@ Calculus of Inductive Constructions (pCIC). %
 The language of CIC also has typed terms, conversion rules,
 derived rules, and (co)inductive definitions.
 
-
 \subsection{Coq Architecture}
-Coq have two levels architecture - kernel and environment. A relatively small kernel based on a language with few primitive constructions (sorts, functions, inductive definitions, product types...) and a limited number of rules for type checking and computation. On top of the kernel, there is a rich environment to help designing theories and proofs. This environment offers mechanism like user extensible notations, tatics for proof automation, libraries... Any definition or proof defined in the environment is ultimately checked by the kernel so the environment can be used and extended safely.\\
+Coq have two levels architecture - kernel and environment. A relatively small kernel based on a language with few primitive constructions (sorts, functions, inductive definitions, product types...) and a limited number of rules for type checking and computation. On top of the kernel, there is a rich environment to help designing theories and proofs. This environment offers mechanism like user extensible notations, tatics for proof automation, libraries... Any definition or proof defined in the environment is ultimately checked by the kernel so the environment can be used and extended safely.
+
 As a Coq user, using high level constructions will help to solve a problem quickly. However, it might also important to understand the underlying low level language in order to develop new functionalities and to better control how certain constructions work. 
  
 \chapter{Strand Space Formalization}
@@ -172,7 +181,7 @@ As a Coq user, using high level constructions will help to solve a problem quick
 
 \chapter{More to say}
 
-\section{A section within an appendix.}
+\section{A section within an appendix}
 This is an appendix.
 
 
