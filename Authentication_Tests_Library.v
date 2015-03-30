@@ -284,7 +284,7 @@ case S.
   intro. *)
 Admitted.
 
-Lemma Prop_11 : forall (n' : node), p11_aux2 n'.
+Lemma Prop_11 : forall (n' : node) , p11_aux2 n'.
 Proof.
 apply well_founded_ind with (R:=prec).
 exact wf_prec.
