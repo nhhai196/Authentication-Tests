@@ -395,11 +395,12 @@ Section Trans_path.
                     transformed_edge (nd n) (nd (n+1)) a))).
   
   Definition not_traverse_key : Prop :=
-    forall i, i < length p -> (DStrand (strand_of (nd i)) \/ EStrand (strand_of (nd i))) ->
+    forall i, i < length p - 1 -> (DStrand (strand_of (nd i)) \/ EStrand (strand_of (nd i))) ->
     exists k, msg_of (nd i) =  K k -> False.
 
 End Trans_path.
-
+Check not_traverse_key.
+Check ln.
 (*********************************************************************)
 
 Parameter default_smsg : smsg.

@@ -223,6 +223,15 @@ Proof.
   apply False_ind. omega.
 Qed.
 
+Lemma single_node_not_traverse_key :
+  forall (n:node) (m a : msg), atomic a -> a <st m -> m <[node] n ->
+  is_trans_path [(n,m)] a -> not_traverse_key [(n,m)].
+Proof.
+intros.
+unfold not_traverse_key. intros.
+simpl in H3. omega.
+Qed.
+
 Definition p11_aux (n:node) (a t : msg) p : Prop := 
   let ln := fst (split p) in 
   let lm := snd (split p) in 
@@ -230,7 +239,8 @@ Definition p11_aux (n:node) (a t : msg) p : Prop :=
   orig_at (nth_node 0 ln) a /\
   nth_node (length p - 1) ln = n /\ 
   nth_msg (length p -1) lm = t /\
-  forall (i:nat), i < length p -> a <st (nth_msg i lm).
+  forall (i:nat), i < length p -> a <st (nth_msg i lm) /\
+  not_traverse_key p.
 
 Definition p11_aux2 (n:node): Prop := 
   forall (a t : msg), atomic a -> a <st t -> t <[node] n ->
@@ -243,7 +253,7 @@ Lemma tpath_extend :
   exists p, p11_aux x' a t' p) ->
   exists p, p11_aux x a t p.
 Proof.
-intros x a t Sat Ntx (x', (t', (C1, (C2, (p, C4))))).
+(*intros x a t Sat Ntx (x', (t', (C1, (C2, (p, C4))))).
 unfold p11_aux in *.
 destruct C4 as (C5, (C6, (C7, (C8, C9)))).
 assert (S : is_trans_path [(nth_node (length p - 1) (fst (split p)), 
@@ -271,7 +281,7 @@ case S.
   split. auto. rewrite list_split_fst. rewrite path_nth_app_left.
   split; auto. rewrite app_length. simpl. assert (length p + 1- 1=length p). omega.
   rewrite H0. split. admit. split. admit.
-  intro.
+  intro. *)
 Admitted.
 
 Lemma Prop_11 : forall (n' : node), p11_aux2 n'.
@@ -285,7 +295,9 @@ exact wf_prec.
   intros Oxa. exists ([(x, t)]). split.
   apply single_node_tp with (n:=x) (m:=t); auto.
   split; auto. split; auto. split; auto.
-  intros. simpl in H. assert (i=0). omega. rewrite H0;auto.
+  intros. simpl in H. assert (i=0). omega.
+  split. rewrite H0;auto. apply single_node_not_traverse_key with (a:=a); auto.
+  apply single_node_tp with (n:=x) (m:=t); auto.
 
   intro NOrig. case (xmit_or_recv x).
   Focus 2. intro Recvx. assert (exists y, msg_deliver y x).
@@ -296,8 +308,9 @@ exact wf_prec.
   auto. apply msg_deliver_comp with (n2:=x). split; auto.
 
   intros. 
-    assert (exists (x':node) (t':msg), (path_edge x' x \/ (ssuccs x' x  /\ xmit x' /\ xmit x /\ orig_at x' a)) /\
-           (a <st t' /\ t' <[node] x' /\ (t' = t \/ (t'<>t -> transformed_edge x' x a)))).
+  assert (exists (x':node) (t':msg), 
+         (path_edge x' x \/ (ssuccs x' x  /\ xmit x' /\ xmit x /\ orig_at x' a)) /\
+         (a <st t' /\ t' <[node] x' /\ (t' = t \/ (t'<>t -> transformed_edge x' x a)))).
   apply backward_construction; auto. destruct H0 as (y, (Ly, (H1, H2))).
   apply tpath_extend; auto. exists y, Ly. split. apply H1.
   split. apply H2.
