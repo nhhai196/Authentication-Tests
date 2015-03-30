@@ -354,6 +354,52 @@ End P17.
 
 (*********************************************************************)
 
+Definition not_proper_subterm (t:msg) :=  
+  exists (n': node) (L : msg), 
+  t <st L -> t <> L -> r_node n' -> L <[node] n' -> False.
+Definition r_comp (L:msg) (n:node) := L <[node] n /\ r_node n.
+
 Section P18.
+Variable p : path.
+Variable a : msg.
+Hypothesis t_path: is_trans_path p a.
+Hypothesis no_key : not_traverse_key p.
+Hypothesis p1 : r_node (nth_node 0 (ln p)).
+Hypothesis lp : r_node (nth_node (length p - 1) (ln p)).
+Hypothesis nconst : (nth_msg 0 (lm p)) <> (nth_msg (length p - 1) (lm p)).
+
+  Section P18_1.
+  Variable h1 : msg.
+  Variable k1 k1' : Key.
+  Hypothesis enc_form : nth_msg 0 (lm p) = E h1 k1.
+  Hypothesis key_pair : inv k1 k1'.
+  Hypothesis not_pen : ~PKeys k1'.
+  Hypothesis not_subterm : not_proper_subterm (nth_msg 0 (lm p)).
+
+  Lemma Prop18_1 : 
+    forall n, n < length p - 1 -> nth_msg n (lm p) <> nth_msg (n+1) (lm p) ->
+    r_node (nth_node n (ln p)) /\ 
+    transforming_edge_for (nth_node n (ln p)) (nth_node (n+1) (ln p)) a.
+  Admitted.
+  End P18_1.
+
+  Section P18_2.
+  Variable hp : msg.
+  Variable kp kp' : Key.
+  Hypothesis enc_form : nth_msg (length p - 1) (lm p)= E hp kp.
+  Hypothesis key_pair : inv kp kp'.
+  Hypothesis not_pen : ~PKeys kp'.
+  Hypothesis not_subterm : not_proper_subterm (nth_msg (length p - 1) (lm p)).
+
+  Lemma Prop18_2 : 
+    forall n, n < length p - 1 -> nth_msg n (lm p) <> nth_msg (n+1) (lm p) ->
+    r_node (nth_node n (ln p)) /\ 
+    transforming_edge_for (nth_node n (ln p)) (nth_node (n+1) (ln p)) a.
+  Admitted.
+  End P18_2.
 End P18.
+
+(*********************************************************************)
+
+
 
