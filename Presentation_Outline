@@ -1,0 +1,25 @@
+
+1. A short introduction to Coq 
+  + Genenral information like proof assistant but not automated theorem proving...
+  + Give some concrete examples with proof : 
+    - how to define a term, a variable, a inductive definition...
+    - how to write a proof using basic tatics like intro, auto, simpl...
+2. Summary of the formalization of strand spaces 
+  Talk about definitions of strand, nodes, strand saces... both in general and in Coq
+  - Message algebra
+  - Node
+  - Strand
+  - Strand edges
+  - Paths
+  - Transformation paths
+  ...
+3. Authentication Tests
+  - Introduction to outgoing and incoming test
+  - How to prove them, just the general ideas
+  - How these tests achieve security goals?
+4. My Contributions
+  - Formalize strand spaces in Coq
+  - Build a strand library that contains manny basic results of strand spaces
+  - Prove authentication tests
+5. Conclusion 
+6. Future Work
