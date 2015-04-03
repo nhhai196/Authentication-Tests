@@ -46,6 +46,13 @@ intros. apply H.
 Qed.
 Hint Resolve incoming_test_imp_trans_edge.
 
+Lemma outgoing_test_imp_trans_edge : 
+  forall x y a t, outgoing_test x y a t  -> transformed_edge_for x y a.
+Proof.
+intros. apply H. 
+Qed.
+Hint Resolve outgoing_test_imp_trans_edge.
+
 Lemma test_imp_orig : forall x y a, test x y a -> orig_at x a.
 Proof.
 intros. apply H.
@@ -118,28 +125,92 @@ Proof.
 intros.  destruct H. apply (H2 x y); auto.
 Qed.
 
-Lemma tp_not_constant :
+Lemma transpath_not_constant :
   forall p a, is_trans_path p a -> 
   transformed_edge_for (nth_node 0 (ln p)) (nth_node (length p - 1) (ln p)) a -> 
-  exists n, n < length p - 1 /\ 
-  (nth_msg n (lm p) <> nth_msg (n+1) (lm p)).
+  not_constant_tp p.
 Admitted.
+
+Lemma ssuccs_both_r_nodes :
+  forall x y, ssuccs x y -> r_node x -> r_node y.
+Proof.
+intros.
+unfold r_node in *. unfold p_node in *.
+rewrite (ssuccs_same_strand x y) in H0; auto.
+Qed.
+
+Lemma trans_ef_imp_ssuccs :
+  forall x y a, transforming_edge_for x y a -> ssuccs x y.
+Proof.
+intros. apply H.
+Qed.
+Hint Resolve trans_ef_imp_ssuccs.
+
+Lemma tp_comp : 
+  forall p a i, is_trans_path p a -> i < length p -> 
+  nth_msg i (lm p) <[node] nth_node i (ln p).
+Proof.
+intros. apply H. auto.
+Qed. 
+
+Lemma tf_edge_exists : 
+  forall x y a, transformed_edge_for x y a -> 
+  exists Ly, a <st Ly /\ Ly <[node] y.
+Proof.
+intros.
+destruct H as ((H1, (H2, (z, (Ly, (H3, (H4, (H5, (H6, H7)))))))), (H8, H9)).
+exists Ly. auto.
+Qed.
 
 Section Authentication_tests.
 Variable n n' : node.
 Variable a t: msg.
-Hypothesis incom : incoming_test n n' a t.
+(* Hypothesis incom : incoming_test n n' a t. *)
 Hypothesis Atom : atomic a.
 
 Theorem Authentication_test1 :
   outgoing_test n n' a t ->
-  exists m m', r_node m /\ r_node m' /\ t <[node] m' /\
+  exists m m', r_node m /\ r_node m' /\ t <[node] m /\
   transforming_edge_for m m' a.
-Admitted.
+Proof.
+intros.
+assert (p11_aux2 n').
+apply Prop_11.
+assert (Ha : exists t', a <st t' /\ t' <[node] n').
+apply tf_edge_exists with (x:=n).
+apply outgoing_test_imp_trans_edge with (t:=t). auto.
+destruct Ha as (t', (Hst, Hcomp)).
+destruct (H0 a t'); auto.
+destruct H1. destruct H2 as (H2, (H3, (H4, H5))).
+assert (nth_node 0 (ln x) = n).
+apply unique_orig with (a:=a).
+apply outgoing_test_imp_unique with (x:=n) (y:=n') (t:=t). auto.
+apply H2. apply outgoing_test_imp_orig with (y:=n') (t:=t). auto.
+assert (not_constant_tp x).
+apply transpath_not_constant with (a:=a). auto.
+apply outgoing_test_imp_trans_edge with (t:=t).
+unfold ln in *. rewrite H3. rewrite H6. auto.
+assert (exists i, smallest_index x i).
+apply not_constant_exists_smallest. auto.
+destruct H8 as (i, H8).
+exists (nth_node i (ln x)), (nth_node (i+1) (ln x)).
+assert (r_node (nth_node i (ln x)) /\
+transforming_edge_for (nth_node i (ln x)) (nth_node (i + 1) (ln x)) a).
+apply Prop18_1. apply H8. destruct H8 as (H8, (H81, (H82, H83))).
+split. apply H9.
+split. apply ssuccs_both_r_nodes with (x := nth_node i (ln x)). 
+apply trans_ef_imp_ssuccs with (a:=a); apply H9. apply H9.
+split. assert (nth_msg i (snd (List.split x)) = 
+               nth_msg 0 (snd (List.split x))).
+apply H83. omega.
+assert (nth_msg 0 (lm x) = t). admit. (* TODO : add assumption about a to make this true*)
+unfold lm in H11. rewrite H11 in H10. unfold ln.  rewrite <- H10.
+apply tp_comp with (a:=a). auto. omega. apply H9. 
+Qed.
 
 Theorem Authentication_test2 : 
   incoming_test n n' a t ->
-  exists m m', r_node m /\ r_node m' /\ t <[node] m /\
+  exists m m', r_node m /\ r_node m' /\ t <[node] m' /\
   transforming_edge_for m m' a.
 Proof.
 intros.
@@ -153,11 +224,25 @@ assert (nth_node 0 (ln x) = n).
 apply unique_orig with (a:=a).
 apply incoming_test_imp_unique with (x:=n) (y:=n') (t:=t). auto.
 apply H2. apply incoming_test_imp_orig with (y:=n') (t:=t). auto.
-assert ( exists i, i < length x - 1 /\ 
-  (nth_msg i (lm x) <> nth_msg (i+1) (lm x))).
-apply tp_not_constant with (a:=a). auto.
+assert (not_constant_tp x).
+apply transpath_not_constant with (a:=a). auto.
 apply incoming_test_imp_trans_edge with (t:=t).
 unfold ln in *. rewrite H3. rewrite H6. auto.
-Admitted.
+assert (exists i, largest_index x i).
+apply not_constant_exists_largest. auto.
+destruct H8 as (i, H8).
+exists (nth_node i (ln x)), (nth_node (i+1) (ln x)).
+assert (r_node (nth_node i (ln x)) /\
+transforming_edge_for (nth_node i (ln x)) (nth_node (i + 1) (ln x)) a).
+apply Prop18_2. apply H8. destruct H8 as (H8, (H81, (H82, H83))).
+split. apply H9.
+split. apply ssuccs_both_r_nodes with (x := nth_node i (ln x)). 
+apply trans_ef_imp_ssuccs with (a:=a); apply H9. apply H9.
+split. assert (nth_msg (i+1) (snd (List.split x)) = 
+               nth_msg (length x - 1) (snd (List.split x))).
+apply H83. omega. omega.
+rewrite H4 in H10. unfold ln. rewrite <- H10.
+apply tp_comp with (a:=a). auto. omega. apply H9. 
+Qed.
 
 End Authentication_tests.  

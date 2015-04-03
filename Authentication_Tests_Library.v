@@ -370,7 +370,43 @@ End P17.
 Definition not_proper_subterm (t:msg) :=  
   exists (n': node) (L : msg), 
   t <st L -> t <> L -> r_node n' -> L <[node] n' -> False.
+
 Definition r_comp (L:msg) (n:node) := L <[node] n /\ r_node n.
+
+Definition not_constant_tp (p:path) :=
+  (nth_msg 0 (lm p)) <> (nth_msg (length p - 1) (lm p)).
+
+Definition largest_index (p:path) (i:nat) :=
+  not_constant_tp p /\ i < length p - 1 /\ 
+  nth_msg i (lm p) <> nth_msg (i+1) (lm p) /\ 
+  forall j, j < length p -> j > i -> 
+  nth_msg j (lm p) = nth_msg (length p - 1) (lm p).
+
+Definition smallest_index (p:path) (i:nat) :=
+  not_constant_tp p /\ i < length p - 1 /\ 
+  nth_msg i (lm p) <> nth_msg (i+1) (lm p) /\ 
+  forall j, j <= i -> nth_msg j (lm p) = nth_msg 0 (lm p).
+
+Lemma largest_index_imp_eq_last :
+  forall p i j, largest_index p i -> j < length p -> j > i -> 
+  nth_msg j (lm p) = nth_msg (length p - 1) (lm p).
+Proof.
+intros.
+apply H; auto.
+Qed.
+
+Lemma not_constant_exists : 
+  forall p, not_constant_tp p -> exists i, i < length p - 1 ->
+  nth_msg i (lm p) <> nth_msg (i+1) (lm p).
+Admitted.
+
+Lemma not_constant_exists_smallest :
+  forall p, not_constant_tp p -> exists i, smallest_index p i.
+Admitted.
+
+Lemma not_constant_exists_largest :
+  forall p, not_constant_tp p -> exists i, largest_index p i.
+Admitted.
 
 Section P18.
 Variable p : path.
@@ -390,7 +426,7 @@ Hypothesis nconst : (nth_msg 0 (lm p)) <> (nth_msg (length p - 1) (lm p)).
   Hypothesis not_subterm : not_proper_subterm (nth_msg 0 (lm p)).
 
   Lemma Prop18_1 : 
-    forall n, n < length p - 1 -> nth_msg n (lm p) <> nth_msg (n+1) (lm p) ->
+    forall n, smallest_index p n ->
     r_node (nth_node n (ln p)) /\ 
     transforming_edge_for (nth_node n (ln p)) (nth_node (n+1) (ln p)) a.
   Admitted.
@@ -405,7 +441,7 @@ Hypothesis nconst : (nth_msg 0 (lm p)) <> (nth_msg (length p - 1) (lm p)).
   Hypothesis not_subterm : not_proper_subterm (nth_msg (length p - 1) (lm p)).
 
   Lemma Prop18_2 : 
-    forall n, n < length p - 1 -> nth_msg n (lm p) <> nth_msg (n+1) (lm p) ->
+    forall n, largest_index p n ->
     r_node (nth_node n (ln p)) /\ 
     transforming_edge_for (nth_node n (ln p)) (nth_node (n+1) (ln p)) a.
   Admitted.
