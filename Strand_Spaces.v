@@ -16,6 +16,10 @@ Open Scope ma_scope.
 
 (** * Strands *)
 (** ** Strand Definition *)
+(** A strand is a sequence of events; it represents either an execution by
+a legitimate party in a security protocol or else a sequence of actions by
+a penetrator. In Coq, we define a strand as a list of signed messages. *)
+
 Definition strand : Type := list smsg.
 
 (** ** Decidable equality for strands *)
@@ -29,17 +33,27 @@ Hint Resolve eq_strand_dec.
 
 (** * Nodes *)
 (** ** Definition *)
+(** A node is a pair of a strand and a natural number, which is less than
+the length of the strand. The natural number is called "index" of that node.
+Note that the list index in Coq starts from zero *)
+
 Definition node : Type := {n:(prod strand nat)| snd n < length (fst n)}. 
 
 (** ** Strand of a node *)
+(** Strand of a node function takes a node and returns the strand of that node *)
+
 Definition strand_of (n:node) : strand := match n with 
   | exist apair _ => fst apair end.
 
 (** ** Index of a node *)
+(** Index of a node functions takes a node and returns the index of that node *)
+
 Definition index_of (n:node) : nat := match n with 
   | exist apair _ => snd apair end.
 
 (** ** Decidable equality for nodes *)
+(** For any two nodes, we can decide whether they are equal or not *)
+
 Definition eq_node_dec : forall x y : node,
  {x = y} + {x <> y}.
 Proof.
@@ -93,49 +107,80 @@ Definition smsg_of (n:node) : smsg := match (valid_smsg n) with
 Definition msg_of (n:node) : msg := smsg_2_msg (smsg_of n).
 
 (** ** Predicate for positive and negative nodes *)
+(** A node is a positive (transmission) node if the signed message of that node
+is positive *)
+
 Definition xmit (n:node) : Prop := exists (m:msg), smsg_of n = + m.
 
-Definition recv (n:node) : Prop := exists (m:msg), smsg_of n = - m.
+(** A node is a negative (reception) node if the signed message of that node
+is negative *)
 
+Definition recv (n:node) : Prop := exists (m:msg), smsg_of n = - m.
 
 (*********************************************************************)
 
 (** * Penetrator Strands *)
 Section PenetratorStrand.
-  Parameter K_p : set Key. 
+
+(** The penetrator's powers are characterized by the set of compromised keys
+which are initially known to penetrator, and a set of penetrator strands 
+that allow the penetrator to generate new messages. The set of compromised 
+keys typically would contain all public keys, all private keys of penetrators,
+and all symmetric keys initially shared between the penetrator and principals
+playing by the protocol rules.*)
+
+  Parameter K_p : set Key.
+
+  (** The atomic actions available to penetrator are encoded in a set of 
+  penetrator strands. We partition penetrator strands according to the 
+  operations they exemplify. *)  
 
   (** ** Text Message Strand *)
+  (** M-strands emit known atomic text or guess. *)
+
   Inductive MStrand (s : strand) : Prop := 
   | P_M : forall t : Text, s = [+ (T t)] -> MStrand s.
   Hint Constructors MStrand.
 
   (** ** Key Strand *)
+  (** K-strands emit keys from a set of known keys. *)
+
   Inductive KStrand (s : strand) : Prop := 
   | P_K : forall k : Key, set_In k K_p -> s = [+ (K k)] -> KStrand s.
   Hint Constructors KStrand.
 
   (** ** Concatenation Strand *)
+  (** C-strands concatenate terms. *)
+
   Inductive CStrand (s : strand) : Prop := 
   | P_C : forall (g h : msg), s = [- g; - h; + (P g h)] -> CStrand s.
   Hint Constructors CStrand.
 
   (** ** Separation Strand *)
+  (** S-strands separate terms. *)
+
   Inductive SStrand (s : strand) : Prop := 
   | P_S : forall (g h : msg), s = [- (P g h); + g ; + h] -> SStrand s.
   Hint Constructors SStrand.
 
   (** ** Encryption Strand *)
+  (** E-strands encrypt when given a key and a plain-text. *)
+
   Inductive EStrand (s : strand) : Prop := 
   | P_E : forall (k : Key) (h :msg), s = [- (K k); - h; + (E h k)] -> EStrand s.
   Hint Constructors EStrand.
 
   (** ** Decryption Strand *)
+  (** D-strands decrypt when given a decryption key and matching cipher-text. *)
+
   Inductive DStrand (s : strand) : Prop := 
   | P_D : forall (k k' : Key) (h :msg), 
     inv k k' -> s = [- ( K k'); - (E h k); + h] -> DStrand s.
   Hint Constructors DStrand.
 
   (** ** Definition for PenetratorStrand *)
+  (** Hence, a strand is called a penetrator strand if it is one of the above  strands. *)
+  
   Inductive PenetratorStrand (s:strand) :Prop :=
   | PM : MStrand s -> PenetratorStrand s
   | PK : KStrand s -> PenetratorStrand s
@@ -146,14 +191,17 @@ Section PenetratorStrand.
   Hint Constructors PenetratorStrand.
 
   (** ** Predicates for penetrable nodes and regular nodes *)
-  (* A node is a penetrator node if the strand it lies on is a penetrator strand *)
+  (** A node is a penetrator node if the strand it lies on is a penetrator strand. *)
+
   Definition p_node (n:node) : Prop := PenetratorStrand (strand_of(n)).
 
-  (* A non-penetrator node is called a regular node *)
+  (** A non-penetrator node is called a regular node. *)
+
   Definition r_node (n:node) : Prop := ~ p_node n.
 
   (** ** Axiom for penetrator node and regular node *)
-  (* Every node is either a penatrator node or regular node *)
+  (** Every node is either a penatrator node or regular node. *)
+
   Axiom node_p_or_r : forall (n:node), p_node n \/ r_node n.
 
 End PenetratorStrand.
@@ -162,6 +210,9 @@ End PenetratorStrand.
 
 (** * Edges *)
 (** ** Inter-strand Edges *)
+(** The inter-strand communication is represented as a relation on nodes.
+x --> y means that a transmission node x sends message to a reception node y. *)
+
 Inductive msg_deliver : relation node :=
   | msg_deliver_step : forall (x y : node) (m:msg), 
     smsg_of x = +m /\ smsg_of y = -m /\ strand_of(x) <> strand_of(y)
@@ -170,6 +221,9 @@ Hint Constructors msg_deliver.
 Notation "x --> y" := (msg_deliver x y) (at level 0, right associativity) : ss_scope.
 
 (** ** Iner-strand Edges - Strand ssuccessor *)
+(** A node y is the successor of a node x, denoted as x ==> y, if they are on
+the same strand and y is immediately after x on the list of nodes of the strand. *)
+   
 Inductive ssucc : relation node :=
   | ssucc_step : forall (x y : node), strand_of(x) = strand_of(y) /\
     index_of(x) + 1 = index_of(y) -> ssucc x y.
@@ -184,6 +238,9 @@ Notation "x ==>+ y" := (ssuccs x y) (at level 0, right associativity) : ss_scope
 Definition ssuccseq : relation node := clos_refl_trans node ssucc.
 
 (** ** Edges on Strand *)
+(** An edge is a realtion on nodes and it is either a inter-strand or inner-strand 
+relation. *)
+
 Inductive strand_edge : relation node :=
   | strand_edge_single : forall x y, msg_deliver x y -> strand_edge x y
   | strand_edge_double : forall x y, ssucc x y -> strand_edge x y.
@@ -194,10 +251,14 @@ Definition prec := clos_trans node strand_edge.
 Notation "x ==>* y" := (ssuccseq x y) (at level 0, right associativity) : ss_scope.
 
 (** ** Constructive and Destructive Edges *)
+(** An edge is constructive if both nodes lie on a encryption or concatenation strand. *)
+
 Inductive cons_edge : relation node :=
   | cons_e : forall x y, ssuccs x y -> EStrand (strand_of x)  -> cons_edge x y
   | cons_c : forall x y,  ssuccs x y -> CStrand (strand_of x) -> cons_edge x y.
 Hint Constructors cons_edge.
+
+(** An edge is destructive if both nodes lie on a decryption or separation strand. *)
 
 Inductive des_edge : relation node :=
   | des_d : forall x y, ssuccs x y -> DStrand (strand_of x)  -> des_edge x y
@@ -207,6 +268,9 @@ Hint Constructors des_edge.
 (*********************************************************************)
 
 (** * Origination *)
+(** We say that a message m is originate at a node n if n is a trasmission node,
+m is an ingredient of the message of n, and m is not an ingredient of any earlier
+node of n. *)
 
 Definition orig_at (n:node) (m:msg) : Prop :=
   xmit(n) /\  (ingred m (msg_of n)) /\
@@ -214,6 +278,9 @@ Definition orig_at (n:node) (m:msg) : Prop :=
   (ingred m (msg_of n')) -> False)).
 
 Definition non_orig (m:msg) : Prop := forall (n:node), ~orig_at n m.
+
+(** If a value originates on only one node in the strand space, we call it uniquely
+originating. *)
 
 Definition unique (m:msg) : Prop :=
   (exists (n:node), orig_at n m) /\
@@ -228,7 +295,6 @@ Definition unique (m:msg) : Prop :=
 (** ** The bundle axiom: every received  message was sent  *)
 Axiom was_sent : forall x : node, (recv x) -> 
   (exists y : node,  msg_deliver y x).
-
 
 (** ** Normal bundle axiom *)
 Axiom not_k_k : forall k k', inv k k' -> DStrand  [-(K k); -(E (K k) k'); + (K k)].
@@ -250,15 +316,16 @@ Definition has_min_elt: (node -> Prop) -> Prop :=
 
 (** * New Component *)
 (** ** Component of a node *)
-(* A message is a component of a node if it is a component 
-of the message at that node %//%*)
+(** A message is a component of a node if it is a component 
+of the message at that node. %//%*)
 Definition comp_of_node (m:msg) (n:node) : Prop := comp m (msg_of n). 
 Notation "x <[node] y" := (comp_of_node x y) (at level 50) : ss_scope.
 
 (** ** New at *)
 (** A message is new at a node if it is a component of that node
 and the message is not a component of any ealier node in the same 
-strand with the node *)
+strand with the node. *)
+
 Definition new_at  (m:msg) (n:node) : Prop :=
   m <[node] n /\ forall (n' : node) , ssuccs n' n -> m <[node] n'-> False.
 
@@ -269,30 +336,44 @@ Section Path.
   Parameter default_node : node.
 
 (** ** Path condition *)
+(**  A path_edge is either a message deliver or a ssuccs where the first node
+is positive and the second node is negative. *)
+
   Inductive path_edge (m n : node) : Prop :=
   | path_edge_single :  msg_deliver m n -> path_edge m n
   | path_edge_double : ssuccs m n /\ recv(m) /\ xmit(n) -> path_edge m n.
   Hint Constructors path_edge.
   Notation "m |--> n" := (path_edge m n) (at level 30) : ss_scope.
 
-(** ** ith node of a path *)
+(** ** The n-th node of a path *)
+(** It takes a natural number and a list of nodes and returns the node at the
+n-th postition on the list. *)
+
   Definition nth_node (i:nat) (p:list node) : node := 
     nth_default default_node p i.
   Hint Resolve nth_node.
 
 (** ** Definitions for paths *)
+(** A path is any finite sequence of nodes where for all two consecutive nodes
+they form a path edge. *)
+
   Definition is_path (p:list node) : Prop := 
     forall i, i < length(p) - 1 -> path_edge (nth_node i p) (nth_node (i+1) p).
 
 (** ** Axiom for paths *)
-(** All paths begin on a positive node and end on a negative node *)
+(** All paths begin on a positive node and end on a negative node. *)
   Axiom path_begin_pos_end_neg : forall (p:list node),
     xmit(nth_node 0 p) /\ recv(nth_node (length(p)-1)  p).
 
 (** ** Penetrator Paths *)
+(** A penetrator path is one in which all nodes other than possibily the first
+or the last are pentrator nodes. *)
+
 Definition p_path (p:list node): Prop := is_path p /\ forall i,
   (i > 0 /\ i < length p - 1) -> p_node (nth_node i p).
 
+(** Any penetrator path that begins at a regular node contains only constructive
+and destructive edges. *) 
 Lemma p_path_cons_or_des : 
   forall p, p_path p -> r_node (nth_node 0 p) ->
   (forall i, i < length p - 1 -> 
@@ -301,15 +382,23 @@ Lemma p_path_cons_or_des :
 Admitted.
 
 (** ** Falling and rising paths *)
+(** A pentrator path is falling if for all adjacent nodes n |--> n' on the path
+the message of n' is an ingredient of n's. *)
+ 
   Definition falling_path ( p : list node) : Prop := 
     p_path p /\ forall i, i < length(p)-1 ->
     ingred (msg_of (nth_node (i+1) p)) (msg_of (nth_node i p)).
+
+(** A pentrator path is rising if for all adjacent nodes n |--> n' on the path
+the message of n is an ingredient of the message of n'. *)
 
   Definition rising_path (p : list node) : Prop := 
     p_path p /\ forall i, i < length(p)-1 ->
     ingred (msg_of (nth_node i p)) (msg_of (nth_node (i+1) p)).
 
 (** ** Destructive and Constructive Paths *)
+(** A penetrator path is constructive if it contains only constructive edges. *)
+
 Definition cons_path (p :list node) : Prop := 
   p_path p /\ (forall i, i < length p - 1 -> 
                ssuccs (nth_node i p) (nth_node (i+1) p) ->
@@ -320,6 +409,8 @@ Definition cons_path_not_key (p : list node) : Prop :=
   des_edge (nth_node i p) (nth_node (i+1) p) ->  
   EStrand (strand_of (nth_node i p)) -> 
   exists k , msg_of (nth_node i p) = K k -> False).
+
+(** A penetrator path is destructive if it contains only destructive edges. *)
 
 Definition des_path (p :list node) : Prop := 
   p_path p /\ (forall i, i < length p - 1 -> 
@@ -337,9 +428,10 @@ End Path.
 (*********************************************************************)
 
 (** * Penetrable Keys and Safe Keys *)
-(* Penetrable key is already penetrated (K_p) or some regular strand
+(** Penetrable key is already penetrated (K_p) or some regular strand
 puts it in a form that could allow it to be penetrated, because for each key
-protecting it, the matching key decryption key is already pentrable *)
+protecting it, the matching key decryption key is already pentrable. *)
+
 Section Penetrable_Keys.
   Parameter Kp : Set.
   Parameter Pk : nat -> Key -> Prop.
@@ -386,6 +478,9 @@ Section Trans_path.
   Definition transforming_edge_for (x y : node) (a :msg) : Prop :=
     transformed_edge x y a /\ recv x /\ xmit y.
 
+  (** A transformation path is a path for which each node is labelled by a
+  component. *)
+
   Definition is_trans_path : Prop := 
     (is_path ln \/ (ssuccs (nd 0) (nd 1) /\  xmit (nd 0) /\
                     xmit (nd 1) /\ is_path (tl ln))) /\
@@ -399,8 +494,7 @@ Section Trans_path.
     exists k, msg_of (nd i) =  K k -> False.
 
 End Trans_path.
-Check not_traverse_key.
-Check ln.
+
 (*********************************************************************)
 
 Parameter default_smsg : smsg.
