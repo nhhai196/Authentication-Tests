@@ -28,7 +28,13 @@ formally verified. Our implementation is modular so that researchers
 can easily extract certain modules for their purpose. For example, the
 formalization of strand spaces can be used as a frame work for later
 research using strand space approach.
-  
+\section {Secutirty Protocols}
+Security protocols are programs that aim at securing communications on insecure
+networks, such as Internet, by relying on cryptographic primitives. However, the design of security protocols may contain a lot of errors. For instance, in the Needham-Schroeder public-key protocol, a flaw (using man in the middle attack method) was found by Lowe 17 years after its publication. Although much progress has been made, current security protocols still contains a lot of flaws, which can cause serious consequences. Moreover, security errors cannot be detected by functional software testingbecause they appear only in the presence of a malicious adversary. Automatic tools can therefore be very helpful in detecting and also verifying the correctness of security protocols. Hence, security Protocol verification has been a very active research area since 1990s. Two common approaches in this area are symbolic and computational models. Symbolic model approach relies on specifications while computational model approach relies on implementations. Another approach is strand spaces. 
+\section {Coq As A Software Verification}
+
+\chapter{BackGround}
+
 \section{Strand Space Overview}
 In this section, we briefly summarize the ideas behind the strand space model. The Coq development in the next chapter will provides precise definitions.
 
