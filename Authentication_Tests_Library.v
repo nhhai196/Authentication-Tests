@@ -408,6 +408,34 @@ Lemma not_constant_exists_largest :
   forall p, not_constant_tp p -> exists i, largest_index p i.
 Admitted.
 
+Lemma one : 0 < 1.
+Proof.
+auto.
+Qed.
+
+Lemma strand_length_3 : 
+  forall (s:strand) (x y z : smsg), s = [x;y;z] -> length s = 3.
+Proof.
+intros. unfold length. subst. auto.
+Qed.
+
+Lemma DS_exists_key : 
+  forall y h k k', DStrand (strand_of y) -> msg_of y = E h k -> inv k k' ->
+  exists x, ssuccs x y /\ msg_of x = K k'.
+Admitted.
+
+Lemma DS_node_0 : 
+  forall x, DStrand (strand_of x) -> index_of x = 0 -> exists k, msg_of x = K k.
+Admitted.
+
+Lemma DS_node_1 : 
+  forall x, DStrand (strand_of x) ->  (exists h k, msg_of x = E h k) -> index_of x = 1.
+Admitted.
+
+Lemma msg_of_nth :
+  forall p n, n < length p -> msg_of (nd p n) = nth_msg n (lm p).
+Admitted.
+
 Section P18.
 Variable p : path.
 Variable a : msg.
@@ -429,6 +457,25 @@ Hypothesis nconst : (nth_msg 0 (lm p)) <> (nth_msg (length p - 1) (lm p)).
     forall n, smallest_index p n ->
     r_node (nth_node n (ln p)) /\ 
     transforming_edge_for (nth_node n (ln p)) (nth_node (n+1) (ln p)) a.
+  Proof.
+  intros n Sm.
+  split. unfold r_node. intro pn.
+  destruct Sm as (nc, (S1, (S2, S3))).
+  assert (ssuccs (nd p n) (nd p (n+1)) /\ 
+          (DStrand (strand_of (nd p n)) \/ EStrand (strand_of (nd p n)))).
+  apply Proposition_10 with (a:=a); auto. 
+  destruct H. 
+  case H0.
+  intro ds. apply not_pen. 
+  assert (nth_msg n (lm p) = E h1 k1). rewrite <- enc_form. apply S3. auto.
+  assert (exists x, ssuccs x (nd p n) /\ msg_of x = K k1').
+  apply DS_exists_key with (h:=h1) (k:=k1). auto.
+  rewrite <- H1. apply msg_of_nth. omega. auto.
+  destruct H2 as (x, (H2, H3)).
+  assert (Prop17_aux x). apply Prop17. apply H4. unfold Prop17_aux in H1.
+  auto.
+
+  intros es.
   Admitted.
   End P18_1.
 
