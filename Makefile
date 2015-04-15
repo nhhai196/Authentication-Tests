@@ -138,8 +138,8 @@ all-gal.pdf: $(VFILES)
 validate: $(VOFILES)
 	$(COQCHK) $(COQCHKFLAGS) $(COQLIBS) $(notdir $(^:.vo=))
 	
-pdf: 
-	$(COQDOC) -toc $(COQDOCFLAGS) -latex --body-only $(VFILES)
+latex: 
+	$(COQDOC) -toc $(COQDOCFLAGS) --latex --no-preamble --no-lib-name $(VFILES)
 
 beautify: $(VFILES:=.beautified)
 	for file in $^; do mv $${file%.beautified} $${file%beautified}old && mv $${file} $${file%.beautified}; done

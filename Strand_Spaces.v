@@ -46,7 +46,7 @@ Definition strand_of (n:node) : strand := match n with
   | exist apair _ => fst apair end.
 
 (** ** Index of a node *)
-(** Index of a node functions takes a node and returns the index of that node *)
+(** Index of a node function takes a node and returns the index of that node *)
 
 Definition index_of (n:node) : nat := match n with 
   | exist apair _ => snd apair end.
