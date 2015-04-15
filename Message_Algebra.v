@@ -99,14 +99,13 @@ decide equality.
 Qed.
 Hint Resolve eq_msg_dec.
 
-(** ** Sign messages *)
+(** ** Signed messages *)
 Inductive smsg := 
   | xmit_msg : msg -> smsg 
   | recv_msg : msg -> smsg.
 
 Notation "+ m" := (xmit_msg m) (at level 30) : ma_scope.
 Notation "- m" := (recv_msg m) : ma_scope.
-
 
 (* Convert sign messages to messages *)
 Definition smsg_2_msg (m : smsg) : msg :=
@@ -456,6 +455,3 @@ Inductive k_ingred : relation msg :=
      k_ingred t0 t1 -> k_ingred t0 (E t1 k).
 Hint Constructors k_ingred.
 End K_relation.
-Variable A : Set.
-Variable B : A -> Key.
-Variable m1 m2 : msg.

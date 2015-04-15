@@ -103,7 +103,7 @@ Qed.
 Definition smsg_of (n:node) : smsg := match (valid_smsg n) with
   | exist m _  => m end.
 
-(** ** Unsigend message of a node *)
+(** ** Unsigned message of a node *)
 Definition msg_of (n:node) : msg := smsg_2_msg (smsg_of n).
 
 (** ** Predicate for positive and negative nodes *)
@@ -399,21 +399,21 @@ the message of n is an ingredient of the message of n'. *)
 (** ** Destructive and Constructive Paths *)
 (** A penetrator path is constructive if it contains only constructive edges. *)
 
-Definition cons_path (p :list node) : Prop := 
-  p_path p /\ (forall i, i < length p - 1 -> 
+  Definition cons_path (p :list node) : Prop := 
+    p_path p /\ (forall i, i < length p - 1 -> 
                ssuccs (nth_node i p) (nth_node (i+1) p) ->
                cons_edge (nth_node i p) (nth_node (i+1) p)).
 
-Definition cons_path_not_key (p : list node) : Prop := 
-  cons_path p /\ (forall i, i < length p - 1 -> 
-  des_edge (nth_node i p) (nth_node (i+1) p) ->  
-  EStrand (strand_of (nth_node i p)) -> 
-  exists k , msg_of (nth_node i p) = K k -> False).
+  Definition cons_path_not_key (p : list node) : Prop := 
+    cons_path p /\ (forall i, i < length p - 1 -> 
+    des_edge (nth_node i p) (nth_node (i+1) p) ->  
+    EStrand (strand_of (nth_node i p)) -> 
+    exists k , msg_of (nth_node i p) = K k -> False).
 
 (** A penetrator path is destructive if it contains only destructive edges. *)
 
-Definition des_path (p :list node) : Prop := 
-  p_path p /\ (forall i, i < length p - 1 -> 
+  Definition des_path (p :list node) : Prop := 
+    p_path p /\ (forall i, i < length p - 1 -> 
                ssuccs (nth_node i p) (nth_node (i+1) p) ->
                des_edge (nth_node i p) (nth_node (i+1) p)).
 
@@ -448,6 +448,27 @@ End Penetrable_Keys.
 (*********************************************************************)
 
 (** * Transformation paths *)
+(** Given a test of the form $n \Rightarrow ^{+} n'$, the strategy for
+proving the authentication test results is to consider the paths leading
+from $n$ to $n'$. Because there is a value a originating uniquely at $n$,
+and it is received back at $n'$, there must be a path leading from $n$ to
+$n'$(apart from the trivial path that follows the strand from $n$ to $n'$).
+Moreover, since $a$ is received in a new form at $n'$, there must be a step
+along the path that changes its form; this is a transforming edge. 
+The incoming and outgoing authentication test results codify conditions
+under which we can infer that a transforming edge lies on a regular strand.[[1]]
+*)
+
+(** The proofs focus on the transformation paths leading from $n$ to $n'$
+that keep track of a “relevant” component containing $a$. The relevant 
+component changes only when a transforming edge is traversed, and $a$ occurs
+in a new component of a node between $n$ and $n'$. We regard the edge 
+$n \Rightarrow ^{+} n'$ as a transformed edge, because the same value $a$
+occurs in both nodes, but node n contains a in transformed form[[1]]. 
+Notice that the difinition of transformed and transforming edges are modified
+a little bit to make the proof work precisely. The component of $n'$ containing $a$
+is not necessarily new at $n'$ but it is new at some node in between $n$ and $n'$.*)
+
 Section Trans_path.
   Definition path : Type := list (prod node msg).
   Variable p : path.
@@ -458,6 +479,10 @@ Section Trans_path.
   Definition lm := snd (split p).
   Hint Resolve lm.
 
+  (** A function that takes a natural number and a list of messages and returns
+  the message at the n-th postion in the list. If the natural number is out of 
+  range, then a default message is returned. *)
+
   Definition nth_msg : nat -> list msg -> msg :=
     fun (n:nat) (p:list msg) => nth_default default_msg p n.
   Hint Resolve nth_msg.
@@ -467,19 +492,25 @@ Section Trans_path.
   Definition nd (n:nat) := nth_node n ln.
   Hint Resolve nd.
 
+  (** An abstract predicate for defining transforming edge and transformed edge.*)
+
   Definition transformed_edge (x y : node) (a:msg) : Prop :=
     ssuccs x y /\ atomic a /\
     exists z Ly, ssuccs x z /\ ssuccseq z y /\
     new_at Ly z /\ a <st Ly /\ Ly <[node] y.
+  (** A transformed edge emits a atomic message $a$ and later receives in a new form.*)
 
   Definition transformed_edge_for (x y : node) (a :msg) : Prop :=
     transformed_edge x y a /\ xmit x /\ recv y.
+  
+  (** A transforming edge receive $a$ and later emits it in transformed form.*)
 
   Definition transforming_edge_for (x y : node) (a :msg) : Prop :=
     transformed_edge x y a /\ recv x /\ xmit y.
 
-  (** A transformation path is a path for which each node is labelled by a
-  component. *)
+  (** A transformation path is a path for which each node $n_i$ is labelled by a
+  component $L_i$ of $n_i$ in such a way that $L_i = L_{i+1}$ unless 
+  $n_i \Rightarrow n_{i+1}$ is a trans edge. *)
 
   Definition is_trans_path : Prop := 
     (is_path ln \/ (ssuccs (nd 0) (nd 1) /\  xmit (nd 0) /\
@@ -489,15 +520,12 @@ Section Trans_path.
                     (n < length p - 1 -> (L n = L (n+1) \/ (L n <> L (n+1) -> 
                     transformed_edge (nd n) (nd (n+1)) a))).
   
+  (** A transformation path does not traverse the key edge of a D-strand or E-strand. *)
   Definition not_traverse_key : Prop :=
     forall i, i < length p - 1 -> (DStrand (strand_of (nd i)) \/ EStrand (strand_of (nd i))) ->
     exists k, msg_of (nd i) =  K k -> False.
 
 End Trans_path.
-
-(*********************************************************************)
-
-Parameter default_smsg : smsg.
 
 (*********************************************************************)
 
