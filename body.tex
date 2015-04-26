@@ -52,10 +52,10 @@ identify more exact conditions under which we can rely on the protocol.
 Proof assistants (interactive theorem provers) are computer systems that allow a user to do mathematics on a computer, but not so much the computing (numerical or symbolical) aspect of mathematics but the aspects of proving and defining. So a user can set up a mathematical theory, define properties and do logical reasoning with them. In many proof assistants one can also define functions and compute with them, but their main focus is on doing proofs. As opposed to proof assistants, there are also automated theorem provers. These are systems consisting of a set of well chosen decision procedures that allow formulas of a specific restricted format to be proved automatically. Automated theorem provers are powerful, but have limited expressivity, so there is no way to set-up a generic mathematical theory in such a system.
 
 There are a lot of proof assistant systems like Isabelle, Coq, PVS, NuPRL. Out of them, Coq seems to be the most powerful system that supports a lot of features: higher-order logic, dependent types, proof automation, proof by reflection, code generation, and having a small kernel. The Coq proof assistant is distinguished from the other. That is one main reason that I and my advisor chose to use Coq instead of another proof assistant.
-\begin{table}
-\includegraphics[scale=0.8]{ProofAssistant.jpg}
-\caption{Comparison of proof assistant systems}
-\end{table}
+%\begin{table}
+%\includegraphics[scale=0.8]{ProofAssistant.jpg}
+%\caption{Comparison of proof assistant systems}
+%\end{table}
 
 In addition, proving using Coq provides numerous advantages over paper-and-pencil proofs. First, Coq can mechanically check our proofs, hence it provides much greater confidence on our formalization and on the correctness of our theorems. Second, because all proofs in Coq are constructive, we can automatically extract certified implementations of all our theories. This provides runnable tools (for free!) and give us confidence in the tools as well. Finally, a mechanized representation is more valuable to others who can much more easily
 adapt our work to related projects and obtain high confidence in the results.
@@ -206,43 +206,6 @@ As a Coq user, using high level constructions will help to solve a problem quick
 %\chapter{Authentication Tests}%
 
 \chapter{Conclusion and Future Work}
-
-% Let's assume this is the end of your thesis text.
-
-% Now come appendices, if you had any.
-% Appendices are automatically numbered, just like everything else in
-% LaTeX. But only after you gave this command
-\appendix
-
-\chapter{References}
-\input{References}
-
-\section{A section within an appendix}
-This is an appendix.
-
-
-% Last and least (at least, that's what the library says) - the
-% Bibliography.
-
-
-% you can save some space by having the bibliography singlespaced, if you want
-\singlespacing
-
-%
-% You should become familiar with the BibTeX program, which
-% uses a *.bib-file to collect all citations that you have. It's a lot
-% prettier than typing all the citations right into the document. The 
-% reference to citations also works well that way, but the exact 
-% explanation of that will be on the CS-GSO homepage, whenever I'll ever 
-% have time for that.
-%
-%
-% If you use BibTeX, the bibliography is very easy. You refer to
-% citations in the text with \cite{tag}, where tag is the tag that you
-% defined in the bib-file.
-% Then, you run bibtex once in a while during compilation, and the
-% rest is done in two lines:
-
 
 %%% Local Variables:
 %%% mode: latex
