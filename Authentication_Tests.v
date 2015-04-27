@@ -6,11 +6,23 @@ Require Import Strand_Spaces Strand_Library Message_Algebra
 (** * Definitions *)
 (* REF: Definition 13 *)
 
-(** ** Test component *)
+(** ** Test component and test *)
+(** Tests can use their test components in at least two different ways. If the
+uniquely originating value is sent in encrypted form, and the challenge is to
+decrypt it, then that is an outgoing test. If it is received back in encrypted
+form, and the challenge is to produce that encrypted form, then that is an
+incoming test %\cite{Guttman}%. These two kinds of test are illustrated in Figure 7.1.
+%\\%*)
+
+(** %\begin{figure}[h]
+     \includegraphics[scale=0.7]{outgoing_incoming_tests}
+     \centering
+     \caption{Outgoing and Incoming Tests}
+     \end{figure}% *)
+
 Definition test_component (a t: msg) (n:node) : Prop :=
   (exists h k, t = E h k) /\ a <st t /\ t <[node] n /\ not_proper_subterm t.
 
-(** ** Test *)
 Definition test (x y : node) (a : msg) : Prop :=
   unique a /\ orig_at x a /\ transformed_edge_for x y a.
 
@@ -197,7 +209,14 @@ Hypothesis Atom : atomic a.
 (** ** Outgoing test *)
 (** If a regular pricipal sends out a messages in encrypted form, 
 the original component, and sometime later receives it back in a new component. 
-Then we can conclude that there exists a regular transforming edge. *)
+Then we can conclude that there exists a regular transforming edge. The meaning
+of this test is illusrated in the Figure 7.2. *)
+
+(** %\begin{figure}[h]
+     \includegraphics[scale=0.7]{outgoing_test}
+     \centering
+     \caption{Authentication provided by an Outgoing Test}
+     \end{figure}% *)
 
 Theorem Authentication_test1 :
   outgoing_test n n' a t ->
@@ -243,6 +262,12 @@ Qed.
 (** Incoming tests can be used to infer the existence of a regular 
 transforming edge in protocols in which the nonce is emitted in paintext,
 and later received in cnrypted form %\cite{Guttman}%. *)
+
+(** %\begin{figure}[h]
+     \includegraphics[scale=0.7]{outgoing_test}
+     \centering
+     \caption{Authentication provided by an Incoming Test}
+     \end{figure}% *)
 
 Theorem Authentication_test2 : 
   incoming_test n n' a t ->

@@ -1,5 +1,7 @@
 \chapter{Introduction}
-\section{Objectives and Project Motivation}
+This chapter gives a short introduction about project motivations,
+cryptographic protocols, and proof assistant. 
+\section{Objectives and Project Motivations}
 Cryptographic protocols are intended to let principals communicate
 securely over a communication protocol which are designed to provide
 various kinds of security assurances. An important security goal of
@@ -14,8 +16,7 @@ back in a different cryptographic context then it can be concluded
 that some principal processing the relevant key has received and
 transformed the message in which  was emitted. The authentication
 tests themselves are easy to apply but the proof justifying them are
-more complicated. Though authentication tests are proved in the paper,
-they have not been formally verified.  As we know that once lemma or a
+more complicated \cite{Guttman}. Though authentication tests are proved in the paper, they have not been formally verified.  As we know that once lemma or a
 theorem has been proved in some proof assistant language like Coq, we
 will have a very strong assurance that it is true - much more than
 what we usually have when doing a pen-and-paper proof. In addition, we found that there are few papers and projects using Coq to verify security goal of cryptographic protocols and to particularly formalize strand spaces, which is a well-known approach to cryptographic protocols.
@@ -30,23 +31,25 @@ formalization of strand spaces can be used as a frame work for later
 research using strand space approach.
 
 \section {Reasoning about Cryptographic Protocols}
-Cryptographic protocols are programs that aim at securing communications on insecure networks, such as Internet, by relying on cryptographic primitives. Even when cryptographic protocols have developed carefully by experts and also reviewed thoughtfully by other experts, the design of cryptographic protocols may contain some bugs possibly causing them unusable. For instance, in the Needham-Schroeder public-key protocol, a flaw (using man in the middle attack method) was found by Lowe 17 years after its publication. Although much progress has been made, current cryptographic protocols still contains a lot of flaws, which can cause serious consequences. Moreover, security errors cannot be detected by functional software testing because they appear only in the presence of a malicious adversary. Automatic tools can therefore be very helpful in detecting and also verifying the correctness of security protocols.  A lot of tools for verifying and analyzing cryptographic protocols have been developed like ProVerfi, SATMC, PVS, and CPSA. Hence, security protocol verification has been a very active research area since 1990s.
+Cryptographic protocols are programs that aim at securing communications on insecure networks, such as Internet, by relying on cryptographic primitives. Even when cryptographic protocols have developed carefully by experts and also reviewed thoughtfully by other experts, the design of cryptographic protocols may contain some bugs possibly causing them unusable \cite{thayer1998strand}. For instance, in the Needham-Schroeder public-key protocol, a flaw (using man in the middle attack method) was found by Lowe 17 years after its publication. Although much progress has been made, current cryptographic protocols still contains a lot of flaws, which can cause serious consequences. Moreover, security errors cannot be detected by functional software testing because they appear only in the presence of a malicious adversary. Automatic tools can therefore be very helpful in detecting and also verifying the correctness of security protocols.  A lot of tools for verifying and analyzing cryptographic protocols have been developed like ProVerfi, SATMC, PVS, and CPSA. Hence, security protocol verification has been a very active research area since 1990s.
 
 There are several techniques for proving protocol correctness. Two common approaches in this area are symbolic and computational models. Symbolic model approach relies on specifications while computational model approach relies on implementations. Another well-known approach is strand space model, developed by Joshua D. Guttman, Javier Thayer F´abrega, and Jonathan C. Herzog. This approach has several advantages as followings. 
 \begin{itemize}
 \item It gives a clear semantics to the assumption that certain data
 items, such as nonces and session keys, are fresh, and never arise in more
-than one protocol run.
+than one protocol run \cite{ss}.
 \item It provides an explicit model of the possible behaviors of a system
 penetrator; this allows to develop general theorems that bound the
-abilities of the penetrator, independent of the protocol under study.
+abilities of the penetrator, independent of the protocol under study \cite{ss}.
 \item It allows various notions of correctness, involving both secrecy
-and authentication, to be stated and proved.
+and authentication, to be stated and proved \cite{ss}.
 \item The approach leads to detailed insight into the reasons why
 the protocol is correct, and the assumptions required. Proofs are simple
 and informative: they are easily developed by hand, and they help to
-identify more exact conditions under which we can rely on the protocol.
-\end{itemize} We will describe in details strand spaces in the next chapter. %citation %
+identify more exact conditions under which we can rely on the protocol
+\cite{ss}.
+\end{itemize} 
+We will describe in details strand spaces in the next chapter. %citation %
  
 \section {Proof Assistants}
 Proof assistants (interactive theorem provers) are computer systems that allow a user to do mathematics on a computer, but not so much the computing (numerical or symbolical) aspect of mathematics but the aspects of proving and defining. So a user can set up a mathematical theory, define properties and do logical reasoning with them. In many proof assistants one can also define functions and compute with them, but their main focus is on doing proofs. As opposed to proof assistants, there are also automated theorem provers. These are systems consisting of a set of well chosen decision procedures that allow formulas of a specific restricted format to be proved automatically. Automated theorem provers are powerful, but have limited expressivity, so there is no way to set-up a generic mathematical theory in such a system.
@@ -64,7 +67,7 @@ adapt our work to related projects and obtain high confidence in the results.
 \chapter{Background}
 
 \section{Strand Space Overview}
-In this section, we briefly summarize the ideas behind the strand space model. The Coq development in the next chapter will provides precise definitions.
+In this section, we briefly summarize the ideas behind the strand space model. The Coq development in the next chapter will provide precise definitions.
 
 A strand spaces is a set of strands; one may think of a strand space as containing all legitimate executions together with all the actions that a penetrator may apply to the messages contained in these executions.
 
@@ -82,7 +85,7 @@ A bundle is a casually well-founded collection of nodes and two relations $\Righ
 
 The penetrator's powers are characterized by the set of compromised keys which are initially known to penetrator, and a set of penetrator strands that allow the penetrator to generate new messages. The set of compromised keys typically would contain all public keys, all private keys of penetrators, and all symmetric keys initially shared between the penetrator and principals playing by the protocol rules. The atomic actions available to penetrator are encoded in a set of penetrator strands. We partition penetrator strands according to the operations they exemplify. E-strands encrypt when given a key and a plain-text; D-strands decrypt when given a decryption key and matching cipher-text; C-strands concatenate terms; S-strands separate terms; M-strands emit known atomic text or guess; and K-strands emit keys from a set of known keys.
 
-Important units for protocol correctness are components. A term $t$ is a component of another term $t'$ if $t \sqsubset t'$, t is nt a concatenated term, and for every $s \neq t$ such that $t \sqsubset s \sqsubset t'$, $s$ is a concatenated term. Thus, a component is either atomic value or an encryption. A term $t$ is new at a node $n=<s,i>$ if t is a component of $term(n)$ but $t$ is not a component of node $<s,j>$ for every $j < i$. A component is new even if it has occurred earlier as a nested subterm of some larger component. When a component occurs new in a regular node but was a subterm of some previous node, then the principal executing that strand has done some cryptographic work to extract it as a new component. 
+Important units for protocol correctness are components. A term $t$ is a component of another term $t'$ if $t \sqsubset t'$, t is nt a concatenated term, and for every $s \neq t$ such that $t \sqsubset s \sqsubset t'$, $s$ is a concatenated term. Thus, a component is either atomic value or an encryption. A term $t$ is new at a node $n=<s,i>$ if t is a component of $term(n)$ but $t$ is not a component of node $<s,j>$ for every $j < i$. A component is new even if it has occurred earlier as a nested subterm of some larger component. When a component occurs new in a regular node but was a subterm of some previous node, then the principal executing that strand has done some cryptographic work to extract it as a new component\cite{Guttman}. 
 
 \section{The Coq Proof Assistant Overview}
 \subsection{What is Coq?}
@@ -106,7 +109,7 @@ towards Haskell and Ocaml for efficient execution of algorithms and
 linking with other libraries.
 
 The Coq compiler automatically checks the correctness of definitions
-(well-formed sets, terminating functions...) and of proofs.
+(well-formed sets, terminating functions...) and of proofs \cite{paulin2012introduction}.
 
 As a proof assistant, Coq is similar to higher order logic (HOL)
 systems, a family of interactive theorem prover based on Church's HOL
@@ -124,8 +127,7 @@ of formal proofs by automating some aspects of it.
 
 Under programming language point of view, Coq implements dependently
 typed functional programming language, while under logical system, it
-implements a higher-order type theory. Coq exploits the notion of
-Curry-Howard isomorphism - the correspondence between proofs and
+implements a higher-order type theory \cite{bertot2004coq}. Coq exploits the notion of Curry-Howard isomorphism - the correspondence between proofs and
 programs. The relation between a proof and the statement it proves is
 the same as the relation between a program and its type. At the level
 of proofs and programs, we have the following correspondence
@@ -193,7 +195,7 @@ The language of CIC also has typed terms, conversion rules,
 derived rules, and (co)inductive definitions.
 
 \subsection{Coq Architecture}
-Coq have two levels architecture - kernel and environment. A relatively small kernel based on a language with few primitive constructions (sorts, functions, inductive definitions, product types...) and a limited number of rules for type checking and computation. On top of the kernel, there is a rich environment to help designing theories and proofs. This environment offers mechanism like user extensible notations, tatics for proof automation, libraries... Any definition or proof defined in the environment is ultimately checked by the kernel so the environment can be used and extended safely.
+Coq have two levels architecture - kernel and environment. A relatively small kernel based on a language with few primitive constructions (sorts, functions, inductive definitions, product types...) and a limited number of rules for type checking and computation. On top of the kernel, there is a rich environment to help designing theories and proofs. This environment offers mechanism like user extensible notations, tatics for proof automation, libraries... Any definition or proof defined in the environment is ultimately checked by the kernel so the environment can be used and extended safely \cite{paulin2012introduction}.
 
 As a Coq user, using high level constructions will help to solve a problem quickly. However, it might also important to understand the underlying low level language in order to develop new functionalities and to better control how certain constructions work. 
  
