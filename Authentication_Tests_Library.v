@@ -1,5 +1,5 @@
 
-(* This file contains all the propositions needed for authentication tets *)
+(* This chapter contains the proofs of all propositions needed for authentication tets *)
 
 Require Import Strand_Spaces Message_Algebra Strand_Library.
 Require Import Lists.List Relation_Definitions Relation_Operators.
@@ -7,6 +7,9 @@ Require Import List_Library.
 Import ListNotations.
 
 (** * Proposition 6 *)
+(** A destructive path that enters decryption strands only through
+D-cyphertext edges is falling %\cite{Guttman}%. *)
+
 Lemma P6_1 : forall p, des_path_not_key p -> falling_path p.
 Proof.
   intros p Dp. destruct Dp.
@@ -20,12 +23,19 @@ Proof.
   rewrite H5. apply ingred_refl. destruct H4 as (H5, (H6, H7)).
 Admitted.
 
+(** A constructive path that enters encryption strands only through E-plaintext
+edges is rising %\cite{Guttman}% *)
+
 Lemma P6_2 : forall p, cons_path_not_key p -> rising_path p.
 Admitted.  
   
 (*********************************************************************)
 
 (** * Proposition 7 *)
+
+(** The sequence of penetrator strands traversed on a falling path is
+constrained by the structure of term(p1). *)
+
 Section P7_1.
   Variable i : nat.
   Variable p : list node.
@@ -123,6 +133,10 @@ End P7_1.
 (*********************************************************************)
 
 (** * Proposition 10 *)
+(** This lemma states that if $(p,L)$ is a transformation path in which 
+$L_i \neq L_{i+1}$, and $p_i$ is a penetrator node, then $p_i \rightarrow^{+} p_{i+1}$
+lies either on a D-strand or an E-strand %\cite{Guttmna}%. *)
+
 Section Proposition_10.
   Variable p : path.
   Variable n : nat.
