@@ -1,18 +1,34 @@
+(** This chapter contains the proofs of the two authentication tests, outgoing test 
+and incoming test, which are the main results of this project. *)
 
-Require Import Strand_Spaces Strand_Library Message_Algebra Authentication_Tests_Library.
+Require Import Strand_Spaces Strand_Library Message_Algebra 
+               Authentication_Tests_Library.
+(** * Definitions *)
+(* REF: Definition 13 *)
 
+(** ** Test component *)
 Definition test_component (a t: msg) (n:node) : Prop :=
   (exists h k, t = E h k) /\ a <st t /\ t <[node] n /\ not_proper_subterm t.
 
+(** ** Test *)
 Definition test (x y : node) (a : msg) : Prop :=
   unique a /\ orig_at x a /\ transformed_edge_for x y a.
 
+(* REF: Definition 14 *) 
+(** ** Incoming test *)
 Definition incoming_test (x y : node) (a t: msg)  : Prop := 
   (exists h k, t = E h k /\ ~ PKeys k) /\ test x y a /\ test_component a t y.
-  
-Definition outgoing_test (x y : node) (a t : msg) : Prop :=
-  (exists h k k', t = E h k /\ inv k k' /\ ~ PKeys k') /\ test x y a /\ test_component a t x.
 
+(** Outgoing test *)  
+Definition outgoing_test (x y : node) (a t : msg) : Prop :=
+  (exists h k k', t = E h k /\ inv k k' /\ ~ PKeys k') /\
+  test x y a /\ test_component a t x.
+
+(** * Some basic results *)
+(** Below are some basic results following directly form the definitions for test,
+test component, outgoing test, and incoming test. *)
+
+(** ** Unique *)
 Lemma test_imp_unique : forall x y a, test x y a -> unique a.
 Proof.
 intros. apply H.
@@ -33,7 +49,10 @@ intros. apply H.
 Qed.
 Hint Resolve outgoing_test_imp_unique.
 
-Lemma test_imp_trans_edge : forall x y a, test x y a -> transformed_edge_for x y a.
+
+(** ** Transformed edge *)
+Lemma test_imp_trans_edge :
+  forall x y a, test x y a -> transformed_edge_for x y a.
 Proof.
 intros. apply H.
 Qed.
@@ -53,6 +72,8 @@ intros. apply H.
 Qed.
 Hint Resolve outgoing_test_imp_trans_edge.
 
+
+(** Origination *)
 Lemma test_imp_orig : forall x y a, test x y a -> orig_at x a.
 Proof.
 intros. apply H.
@@ -73,6 +94,7 @@ intros. apply H.
 Qed.
 Hint Resolve outgoing_test_imp_orig.
 
+(** ** Ingredient *)
 Lemma tc_ingred : forall a t n, test_component a t n -> a <st t.
 Proof.
 intros a t n Tc.
@@ -80,13 +102,7 @@ apply Tc.
 Qed.
 Hint Resolve tc_ingred.
 
-Lemma tc_comp : forall a t n, test_component a t n -> t <[node] n.
-Proof.
-intros a t n Tc.
-apply Tc.
-Qed.
-Hint Resolve tc_comp.
-
+(** ** Incoming test (outging test) implies test_component *)
 Lemma incoming_test_imp_tc :
   forall x y a t, incoming_test x y a t  -> test_component a t y.
 Proof.
@@ -100,6 +116,14 @@ Proof.
 intros. apply H. 
 Qed.
 Hint Resolve outgoing_test_imp_tc.
+
+(** Component *)
+Lemma tc_comp : forall a t n, test_component a t n -> t <[node] n.
+Proof.
+intros a t n Tc.
+apply Tc.
+Qed.
+Hint Resolve tc_comp.
 
 Lemma outgoing_test_comp : 
   forall x y a t, outgoing_test x y a t  -> t <[node] x.
@@ -119,6 +143,7 @@ auto.
 Qed.
 Hint Resolve incoming_test_comp.
 
+(** Others *)
 Lemma unique_orig : 
   forall x y a, unique a -> orig_at x a -> orig_at y a -> x = y.
 Proof.
@@ -162,11 +187,17 @@ destruct H as ((H1, (H2, (z, (Ly, (H3, (H4, (H5, (H6, H7)))))))), (H8, H9)).
 exists Ly. auto.
 Qed.
 
+(** * Aunthentication tests *)
+
 Section Authentication_tests.
 Variable n n' : node.
 Variable a t: msg.
-(* Hypothesis incom : incoming_test n n' a t. *)
 Hypothesis Atom : atomic a.
+
+(** ** Outgoing test *)
+(** If a regular pricipal sends out a messages in encrypted form, 
+the original component, and sometime later receives it back in a new component. 
+Then we can conclude that there exists a regular transforming edge. *)
 
 Theorem Authentication_test1 :
   outgoing_test n n' a t ->
@@ -207,6 +238,11 @@ assert (nth_msg 0 (lm x) = t). admit. (* TODO : add assumption about a to make t
 unfold lm in H11. rewrite H11 in H10. unfold ln.  rewrite <- H10.
 apply tp_comp with (a:=a). auto. omega. apply H9. 
 Qed.
+
+(** ** Incoming test *)
+(** Incoming tests can be used to infer the existence of a regular 
+transforming edge in protocols in which the nonce is emitted in paintext,
+and later received in cnrypted form %\cite{Guttman}%. *)
 
 Theorem Authentication_test2 : 
   incoming_test n n' a t ->

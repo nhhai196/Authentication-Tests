@@ -82,6 +82,9 @@ Hint Resolve eq_key_dec.
 (*********************************************************************)
 
 (** * Messages *)
+(** In my formalization, messages are terms (as in the paper). We now define
+the set of messages. *) 
+
 (** ** Inductive  definition for messages *)
 Inductive msg : Set :=
   | T : Text -> msg
@@ -100,6 +103,13 @@ Qed.
 Hint Resolve eq_msg_dec.
 
 (** ** Signed messages *)
+(** In a protocol, principals can either send or receive messages.We repesent
+transmission of a message as the occurrence of that message with positive 
+sign, and reception of a message as its occurrence with negative sign %\cite{Guttman}%.
+So in Coq, signed messages are defined as an inductive set with two constructors, one for
+possitive signed messages and the other for negative signed messages. *)
+
+(** *** Definition *)
 Inductive smsg := 
   | xmit_msg : msg -> smsg 
   | recv_msg : msg -> smsg.
@@ -107,7 +117,10 @@ Inductive smsg :=
 Notation "+ m" := (xmit_msg m) (at level 30) : ma_scope.
 Notation "- m" := (recv_msg m) : ma_scope.
 
-(* Convert sign messages to messages *)
+
+(** *** Signed messages to messages *)
+(** A function to convert signed messages to messages.*)
+
 Definition smsg_2_msg (m : smsg) : msg :=
    match m with
    | (xmit_msg x) => x
@@ -115,6 +128,7 @@ Definition smsg_2_msg (m : smsg) : msg :=
    end.
 Hint Resolve smsg_2_msg.
 
+(** *** Decidable equality for signed messages *)
 Definition eq_smsg_dec : forall (x y : smsg), {x=y} + {x<>y}.
 Proof.
 intros.
@@ -123,6 +137,8 @@ Qed.
 Hint Resolve eq_smsg_dec.
 
 (** ** Atomic messages *)
+(** A message is atomic if it is either a text message or a key message. *)
+
 Inductive atomic : msg -> Prop := 
   |atomic_text : forall t, atomic (T t)
   |atomic_key : forall k, atomic (K k).
@@ -138,18 +154,13 @@ Inductive enc : msg -> Prop :=
   | enc_step : forall m k, enc (E m k).
 Hint Constructors enc.
 
-(** ** Basic messages *)
-(** Treat basic as a predicate, not a subtype *)
-Inductive basic : msg -> Prop :=
-  | b_text : forall t, basic (T t)
-  | b_key : forall k, basic (K k)  .
-Hint Constructors basic.
-
 (** ** Simple message *)
-(** A message is simple if it is not a concatenated (paired) message *)
+(** A message is simple if it is not a concatenated (paired) message. *)
+
 Inductive simple : msg -> Prop :=
   | simple_step : forall m, ~ pair m -> simple m.
 
+(** Encrypted implies simple *)
 Lemma enc_imp_simple : forall x k, simple (E x k).
 Proof.
 intros x k.
@@ -158,7 +169,7 @@ unfold not. intro Hpair.
 inversion Hpair.
 Qed.
 
-(** ** Some basic results about atomic, paired, simple, and basic messages *)
+(** ** Some basic results about atomic, paired, and simple *)
 Lemma pair_not_atomic :
   forall m, pair m -> ~ atomic m.
 Proof.
@@ -175,11 +186,11 @@ intros m HAtom Hpair.
 inversion Hpair; inversion HAtom; subst; discriminate.
 Qed.
 
-Lemma enc_not_basic : forall m1 m2, ~ basic (P m1 m2).
+Lemma enc_not_atomic : forall m1 m2, ~ atomic (P m1 m2).
 Proof.
 unfold not.
-intros m1 m2 HBasic.
-inversion HBasic.
+intros m1 m2 Hatom.
+inversion Hatom.
 Qed.
 
 Lemma atomic_imp_simple : forall a, atomic a -> simple a.
@@ -191,12 +202,13 @@ Qed.
 
 (*********************************************************************)
 
-(** * Freeness assumptions about pair and encryption *)
-(* Both of them are provable in this context *)
+(** * Freeness assumptions *)
+(** Pair and enryption freess assumptions are provable in this context. *)
 
-(** ** For pair *)
+(** ** Pair freeness *)
 (** If two concatenated (or encrypted) messages are equal then each
-component of the first is equal the corresponding componet of the second *)
+component of the first is equal the corresponding componet of the second. *)
+
 Lemma pair_free : forall m1 m2 m1' m2', 
                  P m1 m2 = P m1' m2' -> m1 = m1' /\ m2 = m2'.
 Proof.
@@ -204,7 +216,7 @@ intros m1 m2 m1' m2' HPeq.
 injection HPeq. auto.
 Qed.
 
-(** ** For Encryption *)
+(** ** Encryption Freeness *)
 Lemma enc_free : forall m k m' k',
                  E m k = E m' k' -> m = m' /\ k = k'.
 Proof.
@@ -213,8 +225,14 @@ injection HEeq.
 auto.
 Qed.
 
-(** * Ingredient.   Called "carried by" in some CPSA pubs. *)
+(*********************************************************************)
+
+(** * Ingredient. *)
+(** Called "carried by" in some CPSA publications, and "subterm" in the
+"Authentication Tests and the structures of bundles". *)
 (** ** Definition *)
+(** The ingred relation is defined inductively as following.*)
+
 Inductive ingred : msg -> msg -> Prop :=
 | ingred_refl : forall m, ingred m m
 | ingred_pair_l : forall m l r, 
@@ -228,7 +246,13 @@ Notation "a <st b" := (ingred a b) (at level 30) : ss_scope.
 
 Open Scope ss_scope.
 
-(** ** Properties *)
+(** ** Proper ingredient *)
+Definition proper_ingred (x y: msg) : Prop :=
+  ingred x y /\ x <> y.
+
+Notation "a <<st b" := (proper_ingred a b) (at level 30) : ss_scope.
+
+(** ** Properties of the ingredient relation *)
 (** *** Transitive *)
 Lemma ingred_trans : 
   forall x y z,  x <st y -> y <st z -> x <st z.
@@ -299,6 +323,7 @@ Qed.
 
 (** Size of an ingredient x is always less than or equal
  size of message y if x is an ingredient of y. *)
+
 Lemma ingred_lt : 
   forall x y, x <st y -> size(x) <= size(y).
 Proof. 
@@ -334,7 +359,8 @@ Qed.
 Hint Resolve ingred_ge_size_eq.
 
 (** If each message is an ingredient of each other,
-then they are equal *)
+then they are equal. *)
+
 Lemma ingred_eq : forall (x y :msg), x <st y -> y <st x -> x = y.
 Proof.
 intros x y Hxy Hyx.
@@ -357,13 +383,14 @@ Hint Resolve atomic_ingred_eq.
 (** * Component *)
 (** Intuitively, a message x is a component of a message m 
 if we can get x just by seperation out all the pairs in m, 
-without using decryption *)
+without using decryption. *)
 
 (** ** Component of a message *)
 (** A message t0 is an e-ingredients of message t
 if t is in the smallest set containing t0 and closed 
 under concatenation with arbitrary term t1, i.e,
-if t0 is an atomic value of t *)
+if t0 is an atomic value of t. *)
+
 Inductive e_ingred : relation msg := 
   | e_ingred_refl : forall (t0:msg), e_ingred t0 t0
   | e_ingred_pair_l : forall t0 t1 t2, 
@@ -440,7 +467,8 @@ Section K_relation.
 (** A message t0 is an k-ingredients of message t
 if t is in the smallest set containing t0 and closed 
 under encryption and concatenation with arbitrary term t1, i.e,
-if t0 is an atomic value of t *)
+if t0 is an atomic value of t. *)
+
 Variable F : Set.
 Parameter inj_F_K : F -> Key.
 Axiom inj_F_K_inj : forall x y : F, inj_F_K x = inj_F_K y -> x = y.

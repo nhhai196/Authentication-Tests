@@ -18,11 +18,13 @@ Open Scope ma_scope.
 (** ** Strand Definition *)
 (** A strand is a sequence of events; it represents either an execution by
 a legitimate party in a security protocol or else a sequence of actions by
-a penetrator. In Coq, we define a strand as a list of signed messages. *)
+a penetrator %\cite{Guttman}%. In Coq, we define a strand as a list of signed messages. *)
 
 Definition strand : Type := list smsg.
 
 (** ** Decidable equality for strands *)
+(** It is provable in this context. *)
+
 Definition eq_strand_dec : forall x y : strand,{x = y} + {x <> y}.
 Proof. 
 intros. decide equality.
@@ -35,24 +37,24 @@ Hint Resolve eq_strand_dec.
 (** ** Definition *)
 (** A node is a pair of a strand and a natural number, which is less than
 the length of the strand. The natural number is called "index" of that node.
-Note that the list index in Coq starts from zero *)
+Note that the list index in Coq starts from zero. *)
 
 Definition node : Type := {n:(prod strand nat)| snd n < length (fst n)}. 
 
 (** ** Strand of a node *)
-(** Strand of a node function takes a node and returns the strand of that node *)
+(** Strand of a node function takes a node and returns the strand of that node. *)
 
 Definition strand_of (n:node) : strand := match n with 
   | exist apair _ => fst apair end.
 
 (** ** Index of a node *)
-(** Index of a node function takes a node and returns the index of that node *)
+(** Index of a node function takes a node and returns the index of that node. *)
 
 Definition index_of (n:node) : nat := match n with 
   | exist apair _ => snd apair end.
 
 (** ** Decidable equality for nodes *)
-(** For any two nodes, we can decide whether they are equal or not *)
+(** For any two nodes, we can decide whether they are equal or not. *)
 
 Definition eq_node_dec : forall x y : node,
  {x = y} + {x <> y}.
@@ -68,6 +70,12 @@ Qed.
 Hint Resolve eq_node_dec.
 
 (** ** Signed message of a node *)
+(** We want to have a function that takes a node and returns the signed message 
+of that node. However, it is a little bit hard to write it in Coq since node is a 
+dependent type. Specificly, a node just contains its strand and its index, 
+so we need to extract the signed message at the "index-th" position on the strand. 
+Below are some helper functions for defining such the function. *)
+ 
 Definition option_smsg_of (n:node) : (option smsg) :=
   match n with 
   | exist (s,i) _ => nth_error s i end.
@@ -100,10 +108,15 @@ apply nth_error_len in Heqopn.
 omega.
 Qed.
 
+(** Here is the actual signed message of a node function. *)
+
 Definition smsg_of (n:node) : smsg := match (valid_smsg n) with
   | exist m _  => m end.
 
 (** ** Unsigned message of a node *)
+(** To get the unsigned message of a node, just convert its singed message
+to the unsigned one. *)
+
 Definition msg_of (n:node) : msg := smsg_2_msg (smsg_of n).
 
 (** ** Predicate for positive and negative nodes *)
@@ -127,7 +140,7 @@ which are initially known to penetrator, and a set of penetrator strands
 that allow the penetrator to generate new messages. The set of compromised 
 keys typically would contain all public keys, all private keys of penetrators,
 and all symmetric keys initially shared between the penetrator and principals
-playing by the protocol rules.*)
+playing by the protocol rules %\cite{thayer1998strand}%.*)
 
   Parameter K_p : set Key.
 
@@ -304,7 +317,7 @@ Axiom wf_prec: well_founded prec.
 
 (*********************************************************************)
 
-(** Minimal nodes *)
+(** * Minimal nodes *)
 
 Definition is_minimal: (node -> Prop) -> node -> Prop :=
   fun P x => (P x) /\ forall y, (prec y x) -> ~( P y).
@@ -317,7 +330,8 @@ Definition has_min_elt: (node -> Prop) -> Prop :=
 (** * New Component *)
 (** ** Component of a node *)
 (** A message is a component of a node if it is a component 
-of the message at that node. %//%*)
+of the message at that node. *)
+
 Definition comp_of_node (m:msg) (n:node) : Prop := comp m (msg_of n). 
 Notation "x <[node] y" := (comp_of_node x y) (at level 50) : ss_scope.
 
@@ -362,6 +376,7 @@ they form a path edge. *)
 
 (** ** Axiom for paths *)
 (** All paths begin on a positive node and end on a negative node. *)
+
   Axiom path_begin_pos_end_neg : forall (p:list node),
     xmit(nth_node 0 p) /\ recv(nth_node (length(p)-1)  p).
 
@@ -374,6 +389,7 @@ Definition p_path (p:list node): Prop := is_path p /\ forall i,
 
 (** Any penetrator path that begins at a regular node contains only constructive
 and destructive edges. *) 
+
 Lemma p_path_cons_or_des : 
   forall p, p_path p -> r_node (nth_node 0 p) ->
   (forall i, i < length p - 1 -> 
@@ -382,15 +398,15 @@ Lemma p_path_cons_or_des :
 Admitted.
 
 (** ** Falling and rising paths *)
-(** A pentrator path is falling if for all adjacent nodes n |--> n' on the path
-the message of n' is an ingredient of n's. *)
+(** A pentrator path is falling if for all adjacent nodes $n, n'$ on the path
+the message of $n'$ is an ingredient of $n's$. *)
  
   Definition falling_path ( p : list node) : Prop := 
     p_path p /\ forall i, i < length(p)-1 ->
     ingred (msg_of (nth_node (i+1) p)) (msg_of (nth_node i p)).
 
-(** A pentrator path is rising if for all adjacent nodes n |--> n' on the path
-the message of n is an ingredient of the message of n'. *)
+(** A pentrator path is rising if for all adjacent nodes $n, n'$ on the path
+the message of $n$ is an ingredient of the message of $n'$. *)
 
   Definition rising_path (p : list node) : Prop := 
     p_path p /\ forall i, i < length(p)-1 ->
@@ -430,7 +446,7 @@ End Path.
 (** * Penetrable Keys and Safe Keys *)
 (** Penetrable key is already penetrated (K_p) or some regular strand
 puts it in a form that could allow it to be penetrated, because for each key
-protecting it, the matching key decryption key is already pentrable. *)
+protecting it, the matching key decryption key is already pentrable %\cite{Guttman}%. *)
 
 Section Penetrable_Keys.
   Parameter Kp : Set.
@@ -456,8 +472,8 @@ $n'$(apart from the trivial path that follows the strand from $n$ to $n'$).
 Moreover, since $a$ is received in a new form at $n'$, there must be a step
 along the path that changes its form; this is a transforming edge. 
 The incoming and outgoing authentication test results codify conditions
-under which we can infer that a transforming edge lies on a regular strand.[[1]]
-*)
+under which we can infer that a transforming edge lies on a regular strand
+%\cite{Guttman}%. *)
 
 (** The proofs focus on the transformation paths leading from $n$ to $n'$
 that keep track of a “relevant” component containing $a$. The relevant 
@@ -467,7 +483,8 @@ $n \Rightarrow ^{+} n'$ as a transformed edge, because the same value $a$
 occurs in both nodes, but node n contains a in transformed form[[1]]. 
 Notice that the difinition of transformed and transforming edges are modified
 a little bit to make the proof work precisely. The component of $n'$ containing $a$
-is not necessarily new at $n'$ but it is new at some node in between $n$ and $n'$.*)
+is not necessarily new at $n'$ but it is new at some node in between $n$ and $n'$
+%\cite{Guttman}%.*)
 
 Section Trans_path.
   Definition path : Type := list (prod node msg).

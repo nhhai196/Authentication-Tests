@@ -202,6 +202,8 @@ End Proposition_10.
 
 (*********************************************************************)
 
+(** * Proposition 11 *)
+
 Section Proposition_11.
 
 Lemma single_node_tp : 
@@ -352,6 +354,7 @@ End Path.
 *)
 
 (*********************************************************************)
+(** * Proposition 17 *)
 
 Section P17.
 Definition Prop17_aux (n:node) : Prop :=
@@ -435,6 +438,9 @@ Admitted.
 Lemma msg_of_nth :
   forall p n, n < length p -> msg_of (nd p n) = nth_msg n (lm p).
 Admitted.
+
+(*********************************************************************)
+(** * Proposition 18 *)
 
 Section P18.
 Variable p : path.
