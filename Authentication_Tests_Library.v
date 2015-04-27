@@ -134,7 +134,7 @@ End P7_1.
 
 (** * Proposition 10 *)
 (** This lemma states that if $(p,L)$ is a transformation path in which 
-$L_i \neq L_{i+1}$, and $p_i$ is a penetrator node, then $p_i \rightarrow^{+} p_{i+1}$
+$L_i \neq L_{i+1}$, and $p_i$ is a penetrator node, then $p_i \Rightarrow^{+} p_{i+1}$
 lies either on a D-strand or an E-strand %\cite{Guttmna}%. *)
 
 Section Proposition_10.
@@ -217,6 +217,11 @@ End Proposition_10.
 (*********************************************************************)
 
 (** * Proposition 11 *)
+
+(** This propositions states that given a node such that an atomic message $a$
+is an ingredient of the node's message, it is possible to construct a transformation
+path so that the atomic value is originated at the first node of the path and
+the given node is the last node of the path. *)
 
 Section Proposition_11.
 

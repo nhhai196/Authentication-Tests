@@ -1,5 +1,5 @@
 
-(* This file contains all basic results for strand spaces which will be used when proving *)
+(* This chapter contains all basic results for strand spaces. *)
 
 Require Import Lists.List Omega Ring ZArith.
 Require Import Strand_Spaces Message_Algebra.
@@ -8,6 +8,10 @@ Require Import Relation_Definitions Relation_Operators.
 Require Import List_Library.
 
 Import ListNotations.
+
+
+(** * Messages *)
+(** Convert signed messages to (unsigned) messages *)
 
 Lemma smsg_2_msg_xmit : forall n m, smsg_of n = +m -> msg_of n = m.
 Proof.
@@ -18,6 +22,26 @@ Lemma smsg_2_msg_recv : forall n m, smsg_of n = -m -> msg_of n = m.
 Proof.
 intros. unfold msg_of. rewrite H. auto.
 Qed.
+
+
+(** *)
+Lemma node_smsg_msg_xmit : forall n t,
+smsg_of(n) = (+ t) ->
+msg_of(n) = t.
+Proof.
+  intros n t H.
+  unfold msg_of. rewrite H. reflexivity. 
+Qed.
+Hint Resolve node_smsg_msg_xmit.
+
+Lemma node_smsg_msg_recv : forall n t,
+smsg_of(n) = (- t) ->
+msg_of(n) = t.
+Proof.
+  intros n t H.
+  unfold msg_of. rewrite H. reflexivity. 
+Qed.
+Hint Resolve node_smsg_msg_recv.
 
 Lemma nth_error_some_In {X:Type}: forall l i (x:X),
 nth_error l i = Some x ->
@@ -32,7 +56,7 @@ Proof.
 Qed.
 Hint Resolve nth_error_some_In.
 
- Lemma nth_error_node : forall n,
+Lemma nth_error_node : forall n,
 nth_error (strand_of n) (index_of n) = Some (smsg_of n).
 Proof.
   intros n.
@@ -65,9 +89,9 @@ Proof.
   apply nth_error_node. 
 Qed. 
 
-(** ** xmit and recv *)
+(** * Xmit and recv *)
 
-(** No node is both transmit and receive %\\% *)
+(** No node is both transmit and receive. %\\% *)
 Lemma xmit_vs_recv: forall (n:node),  xmit(n) -> recv(n) -> False.
 Proof.
 intros n Hx Hr.
@@ -91,6 +115,42 @@ Proof.
   simpl in eq_index, eq_strand. subst.
   rewrite (proof_irrelevance (lt yn (length ys)) xp yp). reflexivity.
 Qed.
+
+(** * Predecessor and message deliver *)
+(** ** Baby result about msg_deliver *)
+Lemma msg_deliver_xmit : forall x y, msg_deliver x y -> xmit x.
+Proof.
+intros x y Md.
+destruct Md. 
+unfold xmit. exists m; apply H.
+Qed.
+
+Lemma msg_deliver_recv : forall x y, msg_deliver x y -> recv y.
+Proof.
+intros x y Md.
+destruct Md.
+unfold recv. exists m; apply H.
+Qed.
+
+(** ** Baby results about prec *)
+
+Theorem prec_transitive:
+  forall x y z, (prec x y) -> (prec y z) -> (prec x z).
+Proof.
+  apply t_trans.
+Qed.
+
+Lemma deliver_prec:
+  forall x y, (msg_deliver x y) -> (prec x y).
+Proof.
+  intros. constructor. constructor. auto.
+Qed.
+
+(** * Succsessor *)
+(** This section contains lemmas about successor, transitive closure, reflexive
+transitive closure, and the relations between succsessor and index of nodes.
+For example, if $y$ is a successor of $x$, then the index of $y$ is greater than
+the index of $x$. *)
 
 Lemma ssucc_index_lt :
   forall x y, ssucc x y -> index_of x < index_of y.
@@ -144,11 +204,13 @@ intros. apply ssuccs_imp_ssuccseq.
 apply index_lt_ssuccs; auto.
 Qed.
 
-(** strand-successor is irreflexive %\\% *)
+(** Strand-successor is irreflexive. %\\% *)
 Lemma ssucc_acyclic: forall (n:node),  ssucc n n -> False.
 Proof.
 intros n Hs. inversion Hs. destruct H. omega.
 Qed.
+
+(** Transitive closure of strand successor is also irreflexive. *)
 
 Lemma ssuccs_acyclic : forall (n:node), ssuccs n n -> False.
 Proof.
@@ -157,25 +219,7 @@ assert (index_of n < index_of n). apply ssuccs_index_lt.
 auto. omega.
 Qed.
 
-Lemma node_smsg_msg_xmit : forall n t,
-smsg_of(n) = (+ t) ->
-msg_of(n) = t.
-Proof.
-  intros n t H.
-  unfold msg_of. rewrite H. reflexivity. 
-Qed.
-Hint Resolve node_smsg_msg_xmit.
-
-Lemma node_smsg_msg_recv : forall n t,
-smsg_of(n) = (- t) ->
-msg_of(n) = t.
-Proof.
-  intros n t H.
-  unfold msg_of. rewrite H. reflexivity. 
-Qed.
-Hint Resolve node_smsg_msg_recv.
-
-(** strand-successors are unique %\\% *)
+(** Strand-successors are unique. %\\% *)
 Lemma ssucc_unique: 
   forall (x y z: node),  ssucc x y -> ssucc x z  -> y = z.
 Proof.
@@ -185,7 +229,7 @@ Proof.
 Qed.
 Hint Resolve ssucc_unique.
 
-(** Every node and its successor are on the same strand %\\%*)
+(** Every node and its successor are on the same strand.%\\%*)
 Lemma ssucc_same_strand :
   forall (x y : node), ssucc x y -> strand_of(x) = strand_of(y).
 Proof.
@@ -193,7 +237,6 @@ intros x y Sxy. inversion Sxy. destruct H; auto.
 Qed.
 Hint Resolve ssucc_same_strand. 
 
-(** Lemma for strand_of *)
 Lemma ssuccs_same_strand :
   forall (x y : node), ssuccs x y -> strand_of x = strand_of y.
 Proof.
@@ -212,34 +255,7 @@ Proof.
   auto. congruence.
 Qed.
 
-(** ** Baby result about msg_deliver *)
-Lemma msg_deliver_xmit : forall x y, msg_deliver x y -> xmit x.
-Proof.
-intros x y Md.
-destruct Md. 
-unfold xmit. exists m; apply H.
-Qed.
-
-Lemma msg_deliver_recv : forall x y, msg_deliver x y -> recv y.
-Proof.
-intros x y Md.
-destruct Md.
-unfold recv. exists m; apply H.
-Qed.
-
-(** ** Baby results about prec *)
-
-Theorem prec_transitive:
-  forall x y z, (prec x y) -> (prec y z) -> (prec x z).
-Proof.
-  apply t_trans.
-Qed.
-
-Lemma deliver_prec:
-  forall x y, (msg_deliver x y) -> (prec x y).
-Proof.
-  intros. constructor. constructor. auto.
-Qed.
+(** Successor reverses prec *)
 
 Lemma ssucc_prec:
   forall x y, (ssucc x y) -> (prec x y).
@@ -247,6 +263,7 @@ Proof.
   intros. constructor. apply strand_edge_double. auto.
 Qed.
 
+(** Successor implies prec. *)
 
 Lemma ssuccs_prec:
   forall x y, (ssuccs x y) -> (prec x y).
@@ -256,6 +273,8 @@ Proof.
   apply ssucc_prec; auto.
   apply prec_transitive with (y:=y); auto.
 Qed.
+
+(** Ssuccs is transitive *)
 
 Lemma ssuccs_trans :
   forall x y z, ssuccs x y -> ssuccs y z -> ssuccs x z.
@@ -273,7 +292,7 @@ Proof.
   apply ssuccs_prec; apply H.
 Qed.
 
-(** ** Basic Results for Penetrator Strands *)
+(** * Basic Results for Penetrator Strands *)
   Lemma strand_1_node : forall n x, strand_of n = [x] -> smsg_of n = x.
   Proof.
   intros n x Snx.
@@ -283,7 +302,7 @@ Qed.
   intro. elim H0.
   Qed.
 
-(* If n is a node of a MStrand or KStrand, then n is a positive node *)
+  (** If n is a node of a MStrand or KStrand, then n is a positive node *)
   Lemma MStrand_xmit_node : 
     forall (n:node), MStrand (strand_of n) -> xmit n.
   Proof.
@@ -300,6 +319,9 @@ Qed.
     apply strand_1_node. auto.
   Qed.
 
+  (** If n is a node of a strand of lenght 3, the singed message of n is one of the
+  3 messages on the strand. *)
+ 
   Lemma strand_3_nodes :
     forall n x y z, strand_of n = [x;y;z] ->
     smsg_of n = x \/ smsg_of n = y \/ smsg_of n = z.
@@ -312,7 +334,9 @@ Qed.
     intro Lz. elim Lz; auto.
     intro Le. elim Le; auto.
   Qed.
-
+  
+  (** A function to extract the singed message of a positive node which lies on 
+  a strand of lenght 3 including only one positive node. *)
   Lemma strand_3_nodes_nnp_xmit :
    forall n x y z, strand_of n = [-x;-y;+z] -> xmit n -> smsg_of n = +z.
   Proof.
@@ -326,6 +350,9 @@ Qed.
   auto.
   Qed.
 
+  (** A function to extract the singed message of a negative node which lies on 
+  a strand of lenght 3. *)
+ 
   Lemma strand_3_nodes_nnp_recv :
    forall n x y z, strand_of n = [-x;-y;+z] -> recv n -> 
    smsg_of n = -x \/ smsg_of n = -y.
@@ -338,6 +365,9 @@ Qed.
   intro Hz. apply False_ind. apply (xmit_vs_recv n).
     unfold xmit. exists z ; auto. auto.
   Qed.
+
+  (** A function to extract the singed message of a negative node which lies on 
+  a strand of lenght 3 including only one negative node. *)
 
   Lemma strand_3_nodes_npp_recv :
    forall n x y z, strand_of n = [-x;+y;+z] -> recv n -> 
