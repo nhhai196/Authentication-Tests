@@ -2,50 +2,6 @@
 Require Import Relation_Definitions Relation_Operators 
                Omega Arith ListSet FSetInterface.
 
-(* ******************************************************* *)
-(* VERSION 4 *)
-
-(** * Discusson *)
-
-(**
-
-   We follow Joshua Guttman's Establishing and Preserving Protocol
-   Security Goals.  Except where we don't...
-
-   Start with sorts: names, nonces, data, symmetric keys, asymmetric
-   keys. Let messages be the disjoint union of all these.
-
-   Basic values include names, nonces, data, and keys.  "These keys
-   include parameters and also the range of a key constructor" Latter
-   presumably refers to pk and privk.  Not clear what "parameter"
-   means there.
-
-   About "variables", or "indeterminates": if names, etc are viewed as
-   subsorts of message, then one should have variables at each sort.
-   But if---as in JG's EPPSG paper---one allows variables to be
-   replaced by any message, then names, nonce, etc should be viewed as
-   predicates.
-
-   EPPSG makes a distinction between parameters and variables...not
-   clear on the difference.
-
-   Note.  When we want to have functions like that that operate on
-   certain "messages" only, like keys or names, then we do view keys
-   and names as types.  When you want to treat these as messages then
-   you must explcitly wrap them in their constructors.  As in
-
-   [ (Enc (Data d) (pk n) ) ]  not just
-   [ (Enc       d  (pk n) ) ]
-
-   Too bad, though, since the only way the latter could be well-typed
-   is via the former verbose version so you'd hope it could be
-   "inferred".  But no, that's an accident: could certainly have two
-   constructors with the same input and output types...
-   Moral: subsort inclusion has to be made explicit.
-
-*)
-
-
 (** * Texts *)
 (** ** Definition *)
 Variable Text : Set.
