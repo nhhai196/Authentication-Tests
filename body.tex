@@ -63,6 +63,15 @@ There are a lot of proof assistant systems like Isabelle, Coq, PVS, NuPRL. Out o
 In addition, proving using Coq provides numerous advantages over paper-and-pencil proofs. First, Coq can mechanically check our proofs, hence it provides much greater confidence on our formalization and on the correctness of our theorems. Second, because all proofs in Coq are constructive, we can automatically extract certified implementations of all our theories. This provides runnable tools (for free!) and give us confidence in the tools as well. Finally, a mechanized representation is more valuable to others who can much more easily
 adapt our work to related projects and obtain high confidence in the results.
 
+\section{Related Work}
+This section shall describe some work that is related to my project.
+\begin{enumerate}
+\item The first one is “A formalization of the spi calculus in Coq”, Sébastien Briais,  2007. Spi calculus is an extension of Pi calculus. It is used to model and study cryptographic protocols. That project is similar to my project because it is also a formalization of some mathematical structure in Coq. However, formalizing spi calculus and formalizing strand spaces have different styles. While spi calculus is a functional programming with concurrent processes \cite{SpiCalculus}, strand spaces is about logic. 
+\item The second related work is Proving "Proving Security Protocols Correct" Correct: Formal Verification of Strand Spaces by Andrew Kent and J McCarthy. 
+This work is very similar to my project since it is also to formalize strand spaces. In this work, they followed an other paper of Joshua Gutmman and Thayer Javier, which is just about strand spaces. So their goals are to formalize strand spaces, and to prove some properties of strand spaces. My work is much more, in addition to such goals I also prove the two authentication tests. Furthermore, the project was not completed and unpublished. Andrew Kent and his advisor had done preliminary work for formalizing strand spaces. However, Andrew changed the school and he had new advisor. Hence, the project stopped in the middle. In my project, I
+have a different formalization of strand spaces in Coq and I did prove a lot of lemmas and theorems about strand spaces, and authentication tests.
+\item Last but not least, Certicrypt is a fully machine-checked framework built on top of the Coq proof assistant \cite{certiCrypt}. It is a tool that assists the construction and verification of cryptographic protocols. It supports common patterns for reasoning about cryptography, and has been used successfully to prove many security goals, for example, encryption, digital signature schemes, and zero-knowledge protocols \cite{certiCrypt2}. CertiCrypt provides a rich set of verification techniques for probabilistic programs, including equational theories of observational equivalence, a probabilistic relational Hoare logic, certified program transformations, and techniques widely used in cryptographic proofs such as eager/lazy sampling and failure events \cite{certiCrypt}.   
+\end{enumerate}
 
 \chapter{Background}
 
@@ -208,6 +217,10 @@ As a Coq user, using high level constructions will help to solve a problem quick
 %\chapter{Authentication Tests}%
 
 \chapter{Conclusion and Future Work}
+I successfully formalized strand spaces in Coq, and almost had the proofs for the
+two authentication tests. To accomplish these, I implemented 6 modules as followings.
+
+
 
 %%% Local Variables:
 %%% mode: latex
