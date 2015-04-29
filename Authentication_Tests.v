@@ -14,11 +14,12 @@ form, and the challenge is to produce that encrypted form, then that is an
 incoming test %\cite{Guttman}%. These two kinds of test are illustrated in Figure 7.1.
 %\\%*)
 
-(** %\begin{figure}[h]
+(** %\begin{figure}
      \includegraphics[scale=0.7]{outgoing_incoming_tests}
      \centering
      \caption{Outgoing and Incoming Tests}
-     \end{figure}% *)
+     \end{figure} 
+    % *)
 
 Definition test_component (a t: msg) (n:node) : Prop :=
   (exists h k, t = E h k) /\ a <st t /\ t <[node] n /\ not_proper_subterm t.

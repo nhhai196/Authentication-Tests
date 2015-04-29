@@ -46,10 +46,9 @@ and authentication, to be stated and proved \cite{ss}.
 \item The approach leads to detailed insight into the reasons why
 the protocol is correct, and the assumptions required. Proofs are simple
 and informative: they are easily developed by hand, and they help to
-identify more exact conditions under which we can rely on the protocol
-\cite{ss}.
+identify more exact conditions under which we can rely on the protocol \cite{ss}.
 \end{itemize} 
-We will describe in details strand spaces in the next chapter. %citation %
+We will describe in details strand spaces in the next chapter.
  
 \section {Proof Assistants}
 Proof assistants (interactive theorem provers) are computer systems that allow a user to do mathematics on a computer, but not so much the computing (numerical or symbolical) aspect of mathematics but the aspects of proving and defining. So a user can set up a mathematical theory, define properties and do logical reasoning with them. In many proof assistants one can also define functions and compute with them, but their main focus is on doing proofs. As opposed to proof assistants, there are also automated theorem provers. These are systems consisting of a set of well chosen decision procedures that allow formulas of a specific restricted format to be proved automatically. Automated theorem provers are powerful, but have limited expressivity, so there is no way to set-up a generic mathematical theory in such a system.
@@ -191,7 +190,7 @@ called a sort. Prop and Set are the two base sorts. The sort Prop is
 the universe of propositions. The sort Set intends to be the type of
 small sets and includes data types such as booleans, natural numbers,
 and but also includes products, subsets, function type over these data
-types.
+types \cite{CoqReferenceManual}.
 
 The original Coq system was based on the Calculus of Constructions
 (CoC). %
@@ -199,9 +198,8 @@ Version 7 was based on a generalization of CoC, the Calculus of Inductive
 Constructions (CIC). %
 Since version V8 it is based on a weaker calculus, namely Predicate
 Calculus of Inductive Constructions (pCIC). %
-[citation] 
 The language of CIC also has typed terms, conversion rules,
-derived rules, and (co)inductive definitions.
+derived rules, and (co)inductive definitions \cite{CoqReferenceManual}.
 
 \subsection{Coq Architecture}
 Coq have two levels architecture - kernel and environment. A relatively small kernel based on a language with few primitive constructions (sorts, functions, inductive definitions, product types...) and a limited number of rules for type checking and computation. On top of the kernel, there is a rich environment to help designing theories and proofs. This environment offers mechanism like user extensible notations, tatics for proof automation, libraries... Any definition or proof defined in the environment is ultimately checked by the kernel so the environment can be used and extended safely \cite{paulin2012introduction}.
@@ -216,7 +214,7 @@ As a Coq user, using high level constructions will help to solve a problem quick
 \input{Authentication_Tests}
 %\chapter{Authentication Tests}%
 
-\chapter{Conclusions and Future Work}
+\chapter{Conclusion and Future Work}
 I successfully formalized strand spaces in Coq, and had the proofs for the
 two authentication tests with some admitted results. To accomplish these, I implemented 6 modules as followings.
 \begin{enumerate}
