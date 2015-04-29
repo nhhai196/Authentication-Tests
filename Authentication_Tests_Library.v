@@ -346,7 +346,7 @@ End Proposition_11.
 (*********************************************************************)
 
 (** * Proposition 13 *)
-(*
+
 Section P13. 
   Variable pl : path.
   Let p := fst (split pl).
@@ -357,7 +357,8 @@ Section P13.
   Lemma Prop13 : 
     forall (i:nat), i < length p - 1 -> 
     exists (j:nat), (j <= i /\ msg_of (nth_node j p) = nth_msg i l).
-  Proof.
+  Admitted.
+
   Definition P13_1_aux (n:nat) : Prop :=
     msg_of (nth_node n p) = (nth_msg (length p - 1) l) /\
     forall (i:nat), i >= n -> i <= length p - 1 -> 
@@ -368,12 +369,16 @@ Section P13.
       exists i, i < length p - 1 -> nth_msg i l <> nth_msg (i+1) l ->
         xmit (nth_node n p) /\ EStrand (strand_of (nth_node n p)).
   Admitted.
-End P13.
-End Path.    
-*)
+End P13.    
+
 
 (*********************************************************************)
 (** * Proposition 17 *)
+
+(** This lemma states that either a penetrable key is already penetrated,
+or some regular principal puts it in a form that could allow it to be 
+penetrated. In fact, any key that becoms available to the penetrator in 
+any bundle is a member of PKeys %\cite{Guttman}%. *)
 
 Section P17.
 Definition Prop17_aux (n:node) : Prop :=
@@ -388,75 +393,6 @@ Admitted.
 End P17.
 
 (*********************************************************************)
-
-Definition not_proper_subterm (t:msg) :=  
-  exists (n': node) (L : msg), 
-  t <st L -> t <> L -> r_node n' -> L <[node] n' -> False.
-
-Definition r_comp (L:msg) (n:node) := L <[node] n /\ r_node n.
-
-Definition not_constant_tp (p:path) :=
-  (nth_msg 0 (lm p)) <> (nth_msg (length p - 1) (lm p)).
-
-Definition largest_index (p:path) (i:nat) :=
-  not_constant_tp p /\ i < length p - 1 /\ 
-  nth_msg i (lm p) <> nth_msg (i+1) (lm p) /\ 
-  forall j, j < length p -> j > i -> 
-  nth_msg j (lm p) = nth_msg (length p - 1) (lm p).
-
-Definition smallest_index (p:path) (i:nat) :=
-  not_constant_tp p /\ i < length p - 1 /\ 
-  nth_msg i (lm p) <> nth_msg (i+1) (lm p) /\ 
-  forall j, j <= i -> nth_msg j (lm p) = nth_msg 0 (lm p).
-
-Lemma largest_index_imp_eq_last :
-  forall p i j, largest_index p i -> j < length p -> j > i -> 
-  nth_msg j (lm p) = nth_msg (length p - 1) (lm p).
-Proof.
-intros.
-apply H; auto.
-Qed.
-
-Lemma not_constant_exists : 
-  forall p, not_constant_tp p -> exists i, i < length p - 1 ->
-  nth_msg i (lm p) <> nth_msg (i+1) (lm p).
-Admitted.
-
-Lemma not_constant_exists_smallest :
-  forall p, not_constant_tp p -> exists i, smallest_index p i.
-Admitted.
-
-Lemma not_constant_exists_largest :
-  forall p, not_constant_tp p -> exists i, largest_index p i.
-Admitted.
-
-Lemma one : 0 < 1.
-Proof.
-auto.
-Qed.
-
-Lemma strand_length_3 : 
-  forall (s:strand) (x y z : smsg), s = [x;y;z] -> length s = 3.
-Proof.
-intros. unfold length. subst. auto.
-Qed.
-
-Lemma DS_exists_key : 
-  forall y h k k', DStrand (strand_of y) -> msg_of y = E h k -> inv k k' ->
-  exists x, ssuccs x y /\ msg_of x = K k'.
-Admitted.
-
-Lemma DS_node_0 : 
-  forall x, DStrand (strand_of x) -> index_of x = 0 -> exists k, msg_of x = K k.
-Admitted.
-
-Lemma DS_node_1 : 
-  forall x, DStrand (strand_of x) ->  (exists h k, msg_of x = E h k) -> index_of x = 1.
-Admitted.
-
-Lemma msg_of_nth :
-  forall p n, n < length p -> msg_of (nd p n) = nth_msg n (lm p).
-Admitted.
 
 (*********************************************************************)
 (** * Proposition 18 *)

@@ -140,7 +140,10 @@ validate: $(VOFILES)
 	
 latex: 
 	$(COQDOC) -toc $(COQDOCFLAGS) --latex --no-preamble --no-lib-name $(VFILES)
-
+	
+latex-no-proofs: 
+	$(COQDOC) -toc $(COQDOCFLAGS) --latex --no-preamble --no-lib-name --light $(VFILES)
+	
 beautify: $(VFILES:=.beautified)
 	for file in $^; do mv $${file%.beautified} $${file%beautified}old && mv $${file} $${file%.beautified}; done
 	@echo 'Do not do "make clean" until you are sure that everything went well!'

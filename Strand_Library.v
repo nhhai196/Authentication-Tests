@@ -381,7 +381,7 @@ Qed.
     unfold xmit. exists z ; auto. auto.
   Qed.
 
-  (** TODO : move to right place *)
+  (* TODO : move to right place *)
   Lemma pair_not_ingred_comp_l : forall x y, ~(P x y) <st x.
   Proof.
     intros x y Hingred.
@@ -468,8 +468,7 @@ Qed.
     apply (enc_not_ingred_comp_l h k). rewrite Mn1, Mn2 in Hingred. auto.
   Qed.
 
-(** ** Basic results about penetrator strands related to components *)
-(* A MStrand or KStrand cannot have an edge *)
+(** ** A MStrand or KStrand cannot have an edge *)
 Lemma strand_1_node_index_0 : 
   forall x s, strand_of x  = [s] -> index_of x = 0.
 Proof.
@@ -507,6 +506,7 @@ apply strand_1_node_index_0 with (s := +K k). congruence.
 congruence. congruence.
 Qed.  
 
+(** ** A CStrand or SStrand cannot have a transformed edge *) 
 Lemma CStrand_not_edge : 
   forall (s:strand), CStrand s -> ~ exists (x y : node) (a :msg), 
     strand_of x = s /\ strand_of y = s /\
@@ -646,7 +646,7 @@ Proof.
   apply prec_msg_step; auto.
 Qed.
 *)
-(** ** Every inhabited predicate has a prec-minimal element *)
+(** * Every inhabited predicate has a prec-minimal element *)
 Theorem always_min_elt :  forall P: node-> Prop, 
   (exists (x:node), (P x)) -> has_min_elt P.
 Proof.
@@ -679,7 +679,7 @@ Proof.
   assumption.
 Qed.
 
-(** ** prec is acyclic *)
+(** Prec is acyclic *)
 
 Theorem prec_is_acyclic: forall (x:node), (prec x x) -> False.
 Proof.
@@ -713,7 +713,7 @@ Section IngredientsOriginate.
     apply always_min_elt; auto.
   Qed.
 
-(** TODO : *)
+(* TODO : *)
 Lemma smsg_xmit_msg : 
   forall n m, smsg_of(n) = (+ m) -> msg_of(n) = m.
 Proof.
@@ -818,6 +818,8 @@ Qed.
 
 End IngredientsOriginate.
 
+(** * Extending two paths *)
+
 Lemma path_nth_app_left : 
   forall p q n, n < length p -> nth_node n (p++q) = nth_node n p.
 Proof.
@@ -865,6 +867,7 @@ Proof.
   assumption.
 Qed.
 
+(** * Transformation path *)
 Section Trans_path.
 Variable p : path.
 Variable n : node.
@@ -1187,6 +1190,8 @@ case (new_at_dec y Ly).
 Qed.
 
 *)
+
+(** * Backward Constructions *)
 Section back_ward.
   Variable a L: msg.
   Variable n : node.
@@ -1290,4 +1295,70 @@ Proof.
  Qed.
    
 End back_ward.
+
+(** * Others *)
+
+Definition not_proper_subterm (t:msg) :=  
+  exists (n': node) (L : msg), 
+  t <st L -> t <> L -> r_node n' -> L <[node] n' -> False.
+
+Definition r_comp (L:msg) (n:node) := L <[node] n /\ r_node n.
+
+Definition not_constant_tp (p:path) :=
+  (nth_msg 0 (lm p)) <> (nth_msg (length p - 1) (lm p)).
+
+Definition largest_index (p:path) (i:nat) :=
+  not_constant_tp p /\ i < length p - 1 /\ 
+  nth_msg i (lm p) <> nth_msg (i+1) (lm p) /\ 
+  forall j, j < length p -> j > i -> 
+  nth_msg j (lm p) = nth_msg (length p - 1) (lm p).
+
+Definition smallest_index (p:path) (i:nat) :=
+  not_constant_tp p /\ i < length p - 1 /\ 
+  nth_msg i (lm p) <> nth_msg (i+1) (lm p) /\ 
+  forall j, j <= i -> nth_msg j (lm p) = nth_msg 0 (lm p).
+
+Lemma largest_index_imp_eq_last :
+  forall p i j, largest_index p i -> j < length p -> j > i -> 
+  nth_msg j (lm p) = nth_msg (length p - 1) (lm p).
+Proof.
+intros.
+apply H; auto.
+Qed.
+
+Lemma not_constant_exists : 
+  forall p, not_constant_tp p -> exists i, i < length p - 1 ->
+  nth_msg i (lm p) <> nth_msg (i+1) (lm p).
+Admitted.
+
+Lemma not_constant_exists_smallest :
+  forall p, not_constant_tp p -> exists i, smallest_index p i.
+Admitted.
+
+Lemma not_constant_exists_largest :
+  forall p, not_constant_tp p -> exists i, largest_index p i.
+Admitted.
+
+Lemma strand_length_3 : 
+  forall (s:strand) (x y z : smsg), s = [x;y;z] -> length s = 3.
+Proof.
+intros. unfold length. subst. auto.
+Qed.
+
+Lemma DS_exists_key : 
+  forall y h k k', DStrand (strand_of y) -> msg_of y = E h k -> inv k k' ->
+  exists x, ssuccs x y /\ msg_of x = K k'.
+Admitted.
+
+Lemma DS_node_0 : 
+  forall x, DStrand (strand_of x) -> index_of x = 0 -> exists k, msg_of x = K k.
+Admitted.
+
+Lemma DS_node_1 : 
+  forall x, DStrand (strand_of x) ->  (exists h k, msg_of x = E h k) -> index_of x = 1.
+Admitted.
+
+Lemma msg_of_nth :
+  forall p n, n < length p -> msg_of (nd p n) = nth_msg n (lm p).
+Admitted.
 

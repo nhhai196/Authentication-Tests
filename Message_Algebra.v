@@ -163,11 +163,10 @@ Qed.
 
 (** * Freeness assumptions *)
 (** Pair and enryption freess assumptions are provable in this context. *)
-
-(** ** Pair freeness *)
 (** If two concatenated (or encrypted) messages are equal then each
 component of the first is equal the corresponding componet of the second. *)
 
+(** ** Pair freeness *)
 Lemma pair_free : forall m1 m2 m1' m2', 
                  P m1 m2 = P m1' m2' -> m1 = m1' /\ m2 = m2'.
 Proof.
@@ -186,7 +185,7 @@ Qed.
 
 (*********************************************************************)
 
-(** * Ingredient. *)
+(** * Ingredient *)
 (** Called "carried by" in some CPSA publications, and "subterm" in the
 "Authentication Tests and the structures of bundles". *)
 (** ** Definition *)
