@@ -1,5 +1,5 @@
 
-(* This chapter contains all basic results for strand spaces. *)
+(* This chapter contains all basic results of strand spaces. *)
 
 Require Import Lists.List Omega Ring ZArith.
 Require Import Strand_Spaces Message_Algebra.
@@ -23,8 +23,6 @@ Proof.
 intros. unfold msg_of. rewrite H. auto.
 Qed.
 
-
-(** *)
 Lemma node_smsg_msg_xmit : forall n t,
 smsg_of(n) = (+ t) ->
 msg_of(n) = t.

@@ -1,5 +1,5 @@
 
-(* This chapter contains the proofs of all propositions needed for authentication tets *)
+(** This chapter contains the proofs of all propositions needed for authentication tets. *)
 
 Require Import Strand_Spaces Message_Algebra Strand_Library.
 Require Import Lists.List Relation_Definitions Relation_Operators.

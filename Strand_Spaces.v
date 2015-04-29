@@ -1,3 +1,5 @@
+(** This chapter contains the formalization of most of stuffs of strand spaces,
+including strand, node, penetrator strand, strand edges, new component... *)
 
 (* Add LoadPath "./". *)
 (* Add LoadPath "./Classical_Wf". *)

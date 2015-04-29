@@ -1,3 +1,6 @@
+(** This chapter contains the formalization of the message algebra.
+We define the set of possible messages that can be exchanged between
+principals in a protocols and the relations on messages. *)
 
 Require Import Relation_Definitions Relation_Operators 
                Omega Arith ListSet FSetInterface.
