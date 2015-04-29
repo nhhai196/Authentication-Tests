@@ -1,5 +1,6 @@
 
-(* This chapter contains all basic results of strand spaces. *)
+(** This chapter contains a collection of technical results conveninet for proving larger results about strand spaces. 
+*)
 
 Require Import Lists.List Omega Ring ZArith.
 Require Import Strand_Spaces Message_Algebra.

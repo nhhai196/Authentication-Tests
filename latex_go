@@ -1,0 +1,2 @@
+pdflatex Report.tex
+open Report.pdf

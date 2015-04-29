@@ -33,7 +33,7 @@ research using strand space approach.
 \section {Reasoning about Cryptographic Protocols}
 Cryptographic protocols are programs that aim at securing communications on insecure networks, such as Internet, by relying on cryptographic primitives. Even when cryptographic protocols have developed carefully by experts and also reviewed thoughtfully by other experts, the design of cryptographic protocols may contain some bugs possibly causing them unusable \cite{thayer1998strand}. For instance, in the Needham-Schroeder public-key protocol, a flaw (using man in the middle attack method) was found by Lowe 17 years after its publication. Although much progress has been made, current cryptographic protocols still contains a lot of flaws, which can cause serious consequences. Moreover, security errors cannot be detected by functional software testing because they appear only in the presence of a malicious adversary. Automatic tools can therefore be very helpful in detecting and also verifying the correctness of security protocols.  A lot of tools for verifying and analyzing cryptographic protocols have been developed like ProVerfi, SATMC, PVS, and CPSA. Hence, security protocol verification has been a very active research area since 1990s.
 
-There are several techniques for proving protocol correctness. Two common approaches in this area are symbolic and computational models. Symbolic model approach relies on specifications while computational model approach relies on implementations. Another well-known approach is strand space model, developed by Joshua D. Guttman, Javier Thayer F´abrega, and Jonathan C. Herzog. This approach has several advantages as followings. 
+There are several techniques for proving protocol correctness. Two common approaches in this area are symbolic and computational models. Symbolic model approach relies on specifications while computational model approach relies on implementations. Another well-known approach is strand space model, developed by Joshua D. Guttman, Javier Thayer F´abrega, and Jonathan C. Herzog. This approach has several advantages as following. 
 \begin{itemize}
 \item It gives a clear semantics to the assumption that certain data
 items, such as nonces and session keys, are fresh, and never arise in more
@@ -65,11 +65,40 @@ adapt our work to related projects and obtain high confidence in the results.
 \section{Related Work}
 This section shall describe some work that is related to my project.
 \begin{enumerate}
-\item The first one is “A formalization of the spi calculus in Coq”, Sébastien Briais,  2007. Spi calculus is an extension of Pi calculus. It is used to model and study cryptographic protocols. That project is similar to my project because it is also a formalization of some mathematical structure in Coq. However, formalizing spi calculus and formalizing strand spaces have different styles. While spi calculus is a functional programming with concurrent processes \cite{SpiCalculus}, strand spaces is about logic. 
-\item The second related work is Proving "Proving Security Protocols Correct" Correct: Formal Verification of Strand Spaces by Andrew Kent and J McCarthy. 
-This work is very similar to my project since it is also to formalize strand spaces. In this work, they followed an other paper of Joshua Gutmman and Thayer Javier, which is just about strand spaces. So their goals are to formalize strand spaces, and to prove some properties of strand spaces. My work is much more, in addition to such goals I also prove the two authentication tests. Furthermore, the project was not completed and unpublished. Andrew Kent and his advisor did preliminary work for formalizing strand spaces. However, Andrew changed the school and he had new advisor. Hence, the project stopped in the middle. In my project, I
-have a different formalization of strand spaces in Coq and I did prove a lot of lemmas and theorems about strand spaces, and authentication tests.
-\item Last but not least, Certicrypt is a fully machine-checked framework built on top of the Coq proof assistant \cite{certiCrypt}. It is a tool that assists the construction and verification of cryptographic protocols. It supports common patterns for reasoning about cryptography, and has been used successfully to prove many security goals, for example, encryption, digital signature schemes, and zero-knowledge protocols \cite{certiCrypt2}. CertiCrypt provides a rich set of verification techniques for probabilistic programs, including equational theories of observational equivalence, a probabilistic relational Hoare logic, certified program transformations, and techniques widely used in cryptographic proofs such as eager/lazy sampling and failure events \cite{certiCrypt}.   
+\item The first one is ``A formalization of the spi calculus in Coq''
+  \cite{briais2007}. Spi calculus is an extension of Pi calculus. It
+  is used to model and study cryptographic protocols. That project is
+  similar to my project because it is also a formalization of some
+  mathematical structure in Coq. However, formalizing spi calculus and
+  formalizing strand spaces have different styles. While spi calculus
+  is a functional programming with concurrent processes
+  \cite{SpiCalculus}, strand spaces is about logic.
+\item The second related work is Proving "Proving Security Protocols
+  Correct" Correct: Formal Verification of Strand Spaces by Andrew
+  Kent and J McCarthy.  This work is very similar to my project since
+  it is also to formalize strand spaces. In this work, they followed
+  an other paper of Joshua Gutmman and Thayer Javier, which is just
+  about strand spaces. So their goals are to formalize strand spaces,
+  and to prove some properties of strand spaces; they did preliminary
+  work but it remains unpublished. 
+  In my project, I have a different formalization of strand spaces in
+  Coq and I did prove a lot of lemmas and theorems about strand
+  spaces, and authentication tests.
+\item  CertiCrypt is a fully machine-checked
+  framework built on top of the Coq proof assistant
+  \cite{certiCrypt}. It is a tool that assists the construction and
+  verification of cryptographic protocols. It supports common patterns
+  for reasoning about cryptography, and has been used successfully to
+  prove many security goals, for example, encryption, digital
+  signature schemes, and zero-knowledge protocols
+  \cite{certiCrypt2}. CertiCrypt provides a rich set of verification
+  techniques for probabilistic programs, including equational theories
+  of observational equivalence, a probabilistic relational Hoare
+  logic, certified program transformations, and techniques widely used
+  in cryptographic proofs such as eager/lazy sampling and failure
+  events \cite{certiCrypt}.    CertiCrypt works in the ``computational
+  model'' for protocol analysis, as opposed to the ``symbolic model''
+  that is the context of our work.
 \end{enumerate}
 
 \chapter{Background}
@@ -215,27 +244,50 @@ As a Coq user, using high level constructions will help to solve a problem quick
 %\chapter{Authentication Tests}%
 
 \chapter{Conclusion and Future Work}
-I successfully formalized strand spaces in Coq, and had the proofs for the
-two authentication tests with some admitted results. To accomplish these, I implemented 6 modules as followings.
+I successfully formalized strand spaces in Coq, and had the proofs for
+the two authentication tests with some incomplete proofs. To accomplish
+these, I implemented 6 modules as following.
 \begin{enumerate}
 \item Message Algebra: formalization of possible messages which can be exchanged between principals in a protocol.
-\item Strand Spaces: formalization of node, strand, penetrator strand, edges...
-\item Strand Library: all basic results of strand spaces, which are used to prove the authentication tests
-\item Authentication Library: the proofs all propositions needed for proving authentication tests
-\item List Library: some basic results about lists
+\item Strand Spaces: formalization of node, strand, penetrator strand,
+  edges, etc.
+\item Strand Library: many basic results of strand spaces, which are used to prove the authentication tests
+\item Authentication Library: the proofs of all propositions needed for proving authentication tests
+\item List Library: some basic results about lists not found in the
+  standard Coq List library
 \item Authentication Tests: the proofs of the two main theorems
 \end{enumerate}
-When formalizing strand spaces in Coq, I encountered a lot of design choices and I had to decide which option to use, for example, inductive definitions (starting with "Fixpoint" in Coq) and deductive definitions (starting with "Definition" in Coq), variable and parameter. Each design choice has some advantages and some disadvantages. So the answer to which one is better depends on the usages of it later.
+
  
 \section{Future Work}
-This section describes the possible future work that can be done based on the project. 
+This section describes the possible future work that can be done based
+on the project.
 
-We already have a framework, strand space formalization, for specifying and verifying cryptographic protocols in general. One potential project following this one is to specify and verify some particular protocols like Otway-Rees, Woo-Lam, Newman-Stubblebine, then apply "Authentication Tests" to prove some specific security goals of these protocols.
+We already have a framework, strand space formalization, for
+specifying and verifying cryptographic protocols in general. One
+potential project following this one is to specify and verify some
+particular protocols like Otway-Rees, Woo-Lam, Newman-Stubblebine,
+then apply "Authentication Tests" to prove some specific security
+goals of these protocols.
 
-We can use Coq to extract programs from proofs. So we can use this Coq's facility to extract the programs of cryptographic protocols, and then use such programs to synthesize protocol implementations. It is a good way to detect the protocol failures or protocol errors. 
+When formalizing strand spaces in Coq, I encountered a lot of design
+choices and I had to decide which option to use, for example,
+inductive definitions (starting with "Fixpoint" in Coq) and deductive
+definitions (starting with "Definition" in Coq), variable and
+parameter. Each design choice has some advantages and some
+disadvantages. So the answer to which one is better depends on the
+usages of it later.
 
-As mentioned before, authentication tests are proved but with some admitted proofs. 
-Due to the limit of time and the difficulties of proving authentication tests, some propositions on the authentications test library have not done yet. These lemmas are verified carefully in paper proofs. However, proving remaining lemmas in Coq will strengthen the correctness of authentication tests.
+We can use Coq to extract programs from proofs. So we can use this
+Coq's facility to extract the programs of cryptographic protocols, and
+then use such programs to synthesize protocol implementations. It is a
+good way to detect the protocol failures or protocol errors.
+
+ Due to the limit of time and the difficulties of
+proving authentication tests, some propositions on the authentications
+test library were not completed. These lemmas are verified carefully in
+paper proofs. However, proving remaining lemmas in Coq will strengthen
+the correctness of authentication tests.
 
 
 

@@ -1,0 +1,21 @@
+DIGEST 3399c24661b0faecbfd3e3ca02cb5792
+FProtocol_HD
+R139:147 Coq.Logic.Classical <> <> lib
+R315:329 Message_Algebra <> <> lib
+R331:337 Strands <> <> lib
+var 1233:1236 <> Init
+var 1238:1241 <> Resp
+var 1261:1263 <> tst
+var 1282:1282 <> a
+R1285:1287 Protocol_HD <> tst defax
+var 1300:1300 <> s
+var 1317:1317 <> x
+R1320:1323 Protocol_HD <> Init defax
+var 1336:1341 <> Init_1
+R1344:1347 Protocol_HD <> Init defax
+var 1367:1372 <> Init_2
+R1375:1378 Strands <> node def
+var 1398:1403 <> Resp_1
+R1406:1409 Strands <> node def
+var 1429:1434 <> Resp_2
+R1437:1440 Strands <> node def

@@ -1,0 +1,510 @@
+DIGEST 4a0244ac9dc08603e545aab4ece2c40a
+FStrands
+R570:578 Coq.Logic.Classical <> <> lib
+R596:610 Message_Algebra <> <> lib
+R612:625 Strand_library <> <> lib
+R643:655 Coq.Lists.ListSet <> <> lib
+R657:666 Coq.Lists.List <> <> lib
+R684:688 Coq.omega.Omega <> <> lib
+R690:695 Coq.ZArith.ZArith <> <> lib
+R713:732 Coq.Relations.Relation_Definitions <> <> lib
+R734:751 Coq.Relations.Relation_Operators <> <> lib
+def 946:951 <> strand
+R963:966 Coq.Init.Datatypes <> list ind
+R968:971 Message_Algebra <> smsg ind
+def 1027:1039 <> eq_strand_dec
+R1056:1061 Strands <> strand def
+R1063:1063 Coq.Init.Specif <> :type_scope:'{'_x_'}'_'+'_'{'_x_'}' not
+R1069:1073 Coq.Init.Specif <> :type_scope:'{'_x_'}'_'+'_'{'_x_'}' not
+R1080:1080 Coq.Init.Specif <> :type_scope:'{'_x_'}'_'+'_'{'_x_'}' not
+R1065:1067 Coq.Init.Logic <> :type_scope:x_'='_x not
+R1064:1064 Strands <> x var
+R1068:1068 Strands <> y var
+R1075:1078 Coq.Init.Logic <> :type_scope:x_'<>'_x not
+R1074:1074 Strands <> x var
+R1079:1079 Strands <> y var
+R1134:1146 Strands <> eq_strand_dec def
+def 1270:1273 <> node
+R1285:1285 Coq.Init.Specif <> :type_scope:'{'_x_':'_x_'|'_x_'}' not
+R1287:1288 Coq.Init.Specif <> :type_scope:'{'_x_':'_x_'|'_x_'}' not
+R1304:1306 Coq.Init.Specif <> :type_scope:'{'_x_':'_x_'|'_x_'}' not
+R1329:1329 Coq.Init.Specif <> :type_scope:'{'_x_':'_x_'|'_x_'}' not
+R1312:1314 Coq.Init.Peano <> :nat_scope:x_'<'_x not
+R1307:1309 Coq.Init.Datatypes <> snd def
+R1315:1320 Coq.Init.Datatypes <> length def
+R1323:1325 Coq.Init.Datatypes <> fst def
+R1289:1292 Coq.Init.Datatypes <> prod ind
+R1301:1303 Coq.Init.Datatypes <> nat ind
+R1294:1299 Strands <> strand def
+def 1372:1380 <> strand_of
+R1385:1388 Strands <> node def
+R1393:1398 Strands <> strand def
+R1409:1409 Strands <> n var
+R1421:1425 Coq.Init.Specif <> exist constr
+R1438:1440 Coq.Init.Datatypes <> fst def
+def 1491:1498 <> index_of
+R1503:1506 Strands <> node def
+R1511:1513 Coq.Init.Datatypes <> nat ind
+R1524:1524 Strands <> n var
+R1536:1540 Coq.Init.Specif <> exist constr
+R1553:1555 Coq.Init.Datatypes <> snd def
+def 1619:1629 <> eq_node_dec
+R1646:1649 Strands <> node def
+R1653:1653 Coq.Init.Specif <> :type_scope:'{'_x_'}'_'+'_'{'_x_'}' not
+R1659:1663 Coq.Init.Specif <> :type_scope:'{'_x_'}'_'+'_'{'_x_'}' not
+R1670:1670 Coq.Init.Specif <> :type_scope:'{'_x_'}'_'+'_'{'_x_'}' not
+R1655:1657 Coq.Init.Logic <> :type_scope:x_'='_x not
+R1654:1654 Strands <> x var
+R1658:1658 Strands <> y var
+R1665:1668 Coq.Init.Logic <> :type_scope:x_'<>'_x not
+R1664:1664 Strands <> x var
+R1669:1669 Strands <> y var
+R1728:1740 Strands <> eq_strand_dec def
+R1728:1740 Strands <> eq_strand_dec def
+R1785:1794 Coq.Arith.Peano_dec <> eq_nat_dec thm
+R1785:1794 Coq.Arith.Peano_dec <> eq_nat_dec thm
+R1844:1860 Coq.Logic.Classical_Prop <> proof_irrelevance thm
+R1863:1864 Coq.Init.Peano <> lt def
+R1870:1875 Coq.Init.Datatypes <> length def
+R1844:1860 Coq.Logic.Classical_Prop <> proof_irrelevance thm
+R1863:1864 Coq.Init.Peano <> lt def
+R1870:1875 Coq.Init.Datatypes <> length def
+R1998:2008 Strands <> eq_node_dec def
+def 2058:2071 <> option_smsg_of
+R2076:2079 Strands <> node def
+R2085:2090 Coq.Init.Datatypes <> option ind
+R2092:2095 Message_Algebra <> smsg ind
+R2109:2109 Strands <> n var
+R2121:2125 Coq.Init.Specif <> exist constr
+R2127:2127 Coq.Init.Datatypes <> :core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2129:2129 Coq.Init.Datatypes <> :core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2131:2131 Coq.Init.Datatypes <> :core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R2138:2146 Coq.Lists.List <> nth_error def
+prf 2164:2173 <> valid_smsg
+R2187:2190 Strands <> node def
+R2194:2194 Coq.Init.Specif <> :type_scope:'{'_x_':'_x_'|'_x_'}' not
+R2196:2196 Coq.Init.Specif <> :type_scope:'{'_x_':'_x_'|'_x_'}' not
+R2201:2203 Coq.Init.Specif <> :type_scope:'{'_x_':'_x_'|'_x_'}' not
+R2229:2229 Coq.Init.Specif <> :type_scope:'{'_x_':'_x_'|'_x_'}' not
+R2220:2222 Coq.Init.Logic <> :type_scope:x_'='_x not
+R2204:2217 Strands <> option_smsg_of def
+R2219:2219 Strands <> n var
+R2223:2226 Coq.Init.Datatypes <> Some constr
+R2197:2200 Message_Algebra <> smsg ind
+R2259:2272 Strands <> option_smsg_of def
+R2259:2272 Strands <> option_smsg_of def
+R2335:2348 Strands <> option_smsg_of def
+R2411:2423 Strand_library <> nth_error_len thm
+R2411:2423 Strand_library <> nth_error_len thm
+def 2460:2466 <> smsg_of
+R2471:2474 Strands <> node def
+R2479:2482 Message_Algebra <> smsg ind
+R2494:2503 Strands <> valid_smsg thm
+R2505:2505 Strands <> n var
+R2517:2521 Coq.Init.Specif <> exist constr
+def 2587:2592 <> msg_of
+R2597:2600 Strands <> node def
+R2605:2607 Message_Algebra <> msg ind
+R2612:2621 Message_Algebra <> smsg_2_msg def
+R2624:2630 Strands <> smsg_of def
+R2632:2632 Strands <> n var
+def 2700:2703 <> xmit
+R2708:2711 Strands <> node def
+R2724:2731 Coq.Init.Logic <> :type_scope:'exists'_x_'..'_x_','_x not
+R2737:2739 Coq.Init.Logic <> :type_scope:'exists'_x_'..'_x_','_x not
+R2734:2736 Message_Algebra <> msg ind
+R2749:2751 Coq.Init.Logic <> :type_scope:x_'='_x not
+R2740:2746 Strands <> smsg_of def
+R2748:2748 Strands <> n var
+R2752:2753 Message_Algebra <> :ma_scope:'+'_x not
+R2754:2754 Strands <> m var
+def 2769:2772 <> recv
+R2777:2780 Strands <> node def
+R2793:2800 Coq.Init.Logic <> :type_scope:'exists'_x_'..'_x_','_x not
+R2806:2808 Coq.Init.Logic <> :type_scope:'exists'_x_'..'_x_','_x not
+R2803:2805 Message_Algebra <> msg ind
+R2818:2820 Coq.Init.Logic <> :type_scope:x_'='_x not
+R2809:2815 Strands <> smsg_of def
+R2817:2817 Strands <> n var
+R2821:2822 Message_Algebra <> :ma_scope:'-'_x not
+R2823:2823 Strands <> m var
+ind 2954:2964 <> msg_deliver
+constr 2989:3004 <> msg_deliver_step
+R2968:2975 Coq.Relations.Relation_Definitions <> relation def
+R2977:2980 Strands <> node def
+R3024:3027 Strands <> node def
+R3033:3035 Message_Algebra <> msg ind
+R3120:3130 Strands <> msg_deliver ind
+R3135:3136 Strands <> n2 var
+R3132:3133 Strands <> n1 var
+R3059:3062 Coq.Init.Logic <> :type_scope:x_'/\'_x not
+R3054:3056 Coq.Init.Logic <> :type_scope:x_'='_x not
+R3044:3050 Strands <> smsg_of def
+R3052:3053 Strands <> n1 var
+R3057:3057 Message_Algebra <> :ma_scope:'+'_x not
+R3058:3058 Strands <> m var
+R3078:3081 Coq.Init.Logic <> :type_scope:x_'/\'_x not
+R3073:3075 Coq.Init.Logic <> :type_scope:x_'='_x not
+R3063:3069 Strands <> smsg_of def
+R3071:3072 Strands <> n2 var
+R3076:3076 Message_Algebra <> :ma_scope:'-'_x not
+R3077:3077 Strands <> m var
+R3095:3098 Coq.Init.Logic <> :type_scope:x_'<>'_x not
+R3082:3090 Strands <> strand_of def
+R3092:3093 Strands <> n1 var
+R3099:3107 Strands <> strand_of def
+R3109:3110 Strands <> n2 var
+R3157:3167 Strands <> msg_deliver ind
+R3193:3203 Strands <> msg_deliver ind
+not 3179 <> :ss_scope:x_'-->'_x
+ind 3315:3319 <> ssucc
+constr 3344:3353 <> ssucc_step
+R3323:3330 Coq.Relations.Relation_Definitions <> relation def
+R3332:3335 Strands <> node def
+R3373:3376 Strands <> node def
+R3452:3456 Strands <> ssucc ind
+R3461:3462 Strands <> n2 var
+R3458:3459 Strands <> n1 var
+R3409:3416 Coq.Init.Logic <> :type_scope:x_'/\'_x not
+R3393:3395 Coq.Init.Logic <> :type_scope:x_'='_x not
+R3380:3388 Strands <> strand_of def
+R3390:3391 Strands <> n1 var
+R3396:3404 Strands <> strand_of def
+R3406:3407 Strands <> n2 var
+R3433:3435 Coq.Init.Logic <> :type_scope:x_'='_x not
+R3429:3431 Coq.Init.Peano <> :nat_scope:x_'+'_x not
+R3417:3424 Strands <> index_of def
+R3426:3427 Strands <> n1 var
+R3436:3443 Strands <> index_of def
+R3445:3446 Strands <> n2 var
+R3483:3487 Strands <> ssucc ind
+R3518:3522 Strands <> ssucc ind
+not 3504 <> :ss_scope:x_'==>'_x
+def 3634:3639 <> ssuccs
+R3643:3650 Coq.Relations.Relation_Definitions <> relation def
+R3652:3655 Strands <> node def
+R3660:3669 Coq.Relations.Relation_Operators <> clos_trans ind
+R3676:3680 Strands <> ssucc ind
+R3671:3674 Strands <> node def
+R3707:3711 Strands <> ssucc ind
+not 3692 <> :ss_scope:x_'==>+'_x
+ind 3801:3804 <> edge
+constr 3829:3839 <> edge_single
+constr 3893:3903 <> edge_double
+R3808:3815 Coq.Relations.Relation_Definitions <> relation def
+R3817:3820 Strands <> node def
+R3878:3881 Strands <> edge ind
+R3886:3887 Strands <> n2 var
+R3883:3884 Strands <> n1 var
+R3857:3867 Strands <> msg_deliver ind
+R3872:3873 Strands <> n2 var
+R3869:3870 Strands <> n1 var
+R3936:3939 Strands <> edge ind
+R3944:3945 Strands <> n2 var
+R3941:3942 Strands <> n1 var
+R3921:3925 Strands <> ssucc ind
+R3930:3931 Strands <> n2 var
+R3927:3928 Strands <> n1 var
+def 3994:3997 <> prec
+R4002:4011 Coq.Relations.Relation_Operators <> clos_trans ind
+R4018:4021 Strands <> edge ind
+R4013:4016 Strands <> node def
+def 4131:4137 <> orig_at
+R4142:4145 Strands <> node def
+R4151:4153 Message_Algebra <> msg ind
+R4175:4179 Coq.Init.Logic <> :type_scope:x_'/\'_x not
+R4168:4171 Strands <> xmit def
+R4173:4173 Strands <> n var
+R4180:4180 Coq.Init.Logic <> :type_scope:x_'/\'_x not
+R4200:4207 Coq.Init.Logic <> :type_scope:x_'/\'_x not
+R4279:4279 Coq.Init.Logic <> :type_scope:x_'/\'_x not
+R4181:4186 Message_Algebra <> ingred ind
+R4191:4196 Strands <> msg_of def
+R4198:4198 Strands <> n var
+R4188:4188 Strands <> m var
+R4219:4222 Strands <> node def
+R4273:4277 Coq.Init.Logic <> False ind
+R4248:4253 Message_Algebra <> ingred ind
+R4258:4263 Strands <> msg_of def
+R4265:4266 Strands <> n' var
+R4255:4255 Strands <> m var
+R4228:4233 Strands <> ssuccs def
+R4238:4238 Strands <> n var
+R4235:4236 Strands <> n' var
+def 4294:4301 <> non_orig
+R4306:4308 Message_Algebra <> msg ind
+R4331:4334 Strands <> node def
+R4338:4338 Coq.Init.Logic <> :type_scope:'~'_x not
+R4339:4345 Strands <> orig_at def
+R4349:4349 Strands <> m var
+R4347:4347 Strands <> n var
+def 4364:4369 <> unique
+R4374:4376 Message_Algebra <> msg ind
+R4391:4391 Coq.Init.Logic <> :type_scope:x_'/\'_x not
+R4420:4427 Coq.Init.Logic <> :type_scope:x_'/\'_x not
+R4487:4487 Coq.Init.Logic <> :type_scope:x_'/\'_x not
+R4392:4399 Coq.Init.Logic <> :type_scope:'exists'_x_'..'_x_','_x not
+R4406:4408 Coq.Init.Logic <> :type_scope:'exists'_x_'..'_x_','_x not
+R4402:4405 Strands <> node def
+R4409:4415 Strands <> orig_at def
+R4419:4419 Strands <> m var
+R4417:4417 Strands <> n var
+R4442:4445 Strands <> node def
+R4484:4484 Coq.Init.Logic <> :type_scope:x_'='_x not
+R4483:4483 Strands <> n var
+R4485:4486 Strands <> n' var
+R4448:4448 Coq.Init.Logic <> :type_scope:x_'/\'_x not
+R4460:4465 Coq.Init.Logic <> :type_scope:x_'/\'_x not
+R4478:4478 Coq.Init.Logic <> :type_scope:x_'/\'_x not
+R4449:4455 Strands <> orig_at def
+R4459:4459 Strands <> m var
+R4457:4457 Strands <> n var
+R4466:4472 Strands <> orig_at def
+R4477:4477 Strands <> m var
+R4474:4475 Strands <> n' var
+sec 4600:4615 <> PenetratorStrand
+ax 4630:4632 <> K_p
+R4636:4638 Coq.Lists.ListSet <> set def
+R4640:4642 Message_Algebra <> Key defax
+ind 4659:4665 <> MStrand
+constr 4695:4697 <> P_M
+R4672:4677 Strands <> strand def
+R4712:4715 Message_Algebra <> Text defax
+R4735:4741 Strands <> MStrand ind
+R4719:4721 Coq.Init.Logic <> :type_scope:x_'='_x not
+R4722:4722 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R4730:4730 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R4723:4725 Message_Algebra <> :ma_scope:'+'_x not
+R4729:4729 Message_Algebra <> :ma_scope:'+'_x not
+R4726:4726 Message_Algebra <> T constr
+R4728:4728 Strands <> t var
+R4766:4772 Strands <> MStrand ind
+ind 4788:4794 <> KStrand
+constr 4824:4826 <> P_K
+R4801:4806 Strands <> strand def
+R4841:4843 Message_Algebra <> Key defax
+R4879:4885 Strands <> KStrand ind
+R4863:4865 Coq.Init.Logic <> :type_scope:x_'='_x not
+R4866:4866 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R4874:4874 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R4867:4869 Message_Algebra <> :ma_scope:'+'_x not
+R4873:4873 Message_Algebra <> :ma_scope:'+'_x not
+R4870:4870 Message_Algebra <> K constr
+R4872:4872 Strands <> k var
+R4846:4851 Coq.Lists.ListSet <> set_In def
+R4855:4857 Strands <> K_p defax
+R4853:4853 Strands <> k var
+R4910:4916 Strands <> KStrand ind
+ind 4932:4938 <> CStrand
+constr 4968:4970 <> P_C
+R4945:4950 Strands <> strand def
+R4988:4990 Message_Algebra <> msg ind
+R5023:5029 Strands <> CStrand ind
+R4995:4997 Coq.Init.Logic <> :type_scope:x_'='_x not
+R4998:4998 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R5002:5003 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R5007:5008 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R5018:5018 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R5009:5011 Message_Algebra <> :ma_scope:'+'_x not
+R5017:5017 Message_Algebra <> :ma_scope:'+'_x not
+R5012:5012 Message_Algebra <> P constr
+R5016:5016 Strands <> h var
+R5014:5014 Strands <> g var
+R5004:5005 Message_Algebra <> :ma_scope:'-'_x not
+R5006:5006 Strands <> h var
+R4999:5000 Message_Algebra <> :ma_scope:'-'_x not
+R5001:5001 Strands <> g var
+R5054:5060 Strands <> CStrand ind
+ind 5076:5082 <> SStrand
+constr 5112:5114 <> P_S
+R5089:5094 Strands <> strand def
+R5132:5134 Message_Algebra <> msg ind
+R5168:5174 Strands <> SStrand ind
+R5139:5141 Coq.Init.Logic <> :type_scope:x_'='_x not
+R5142:5142 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R5152:5153 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R5157:5159 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R5163:5163 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R5160:5161 Message_Algebra <> :ma_scope:'+'_x not
+R5162:5162 Strands <> h var
+R5154:5155 Message_Algebra <> :ma_scope:'+'_x not
+R5156:5156 Strands <> g var
+R5143:5145 Message_Algebra <> :ma_scope:'-'_x not
+R5151:5151 Message_Algebra <> :ma_scope:'-'_x not
+R5146:5146 Message_Algebra <> P constr
+R5150:5150 Strands <> h var
+R5148:5148 Strands <> g var
+R5199:5205 Strands <> SStrand ind
+ind 5221:5227 <> EStrand
+constr 5257:5259 <> P_E
+R5234:5239 Strands <> strand def
+R5275:5277 Message_Algebra <> Key defax
+R5284:5286 Message_Algebra <> msg ind
+R5323:5329 Strands <> EStrand ind
+R5291:5293 Coq.Init.Logic <> :type_scope:x_'='_x not
+R5294:5294 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R5302:5303 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R5307:5308 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R5318:5318 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R5309:5311 Message_Algebra <> :ma_scope:'+'_x not
+R5317:5317 Message_Algebra <> :ma_scope:'+'_x not
+R5312:5312 Message_Algebra <> E constr
+R5316:5316 Strands <> k var
+R5314:5314 Strands <> h var
+R5304:5305 Message_Algebra <> :ma_scope:'-'_x not
+R5306:5306 Strands <> h var
+R5295:5297 Message_Algebra <> :ma_scope:'-'_x not
+R5301:5301 Message_Algebra <> :ma_scope:'-'_x not
+R5298:5298 Message_Algebra <> K constr
+R5300:5300 Strands <> k var
+R5354:5360 Strands <> EStrand ind
+ind 5376:5382 <> DStrand
+constr 5412:5414 <> P_D
+R5389:5394 Strands <> strand def
+R5433:5435 Message_Algebra <> Key defax
+R5442:5444 Message_Algebra <> msg ind
+R5500:5506 Strands <> DStrand ind
+R5466:5468 Coq.Init.Logic <> :type_scope:x_'='_x not
+R5469:5469 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R5479:5480 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R5490:5491 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R5495:5495 Coq.Lists.List ListNotations :list_scope:'['_x_';'_'..'_';'_x_']' not
+R5492:5493 Message_Algebra <> :ma_scope:'+'_x not
+R5494:5494 Strands <> h var
+R5481:5483 Message_Algebra <> :ma_scope:'-'_x not
+R5489:5489 Message_Algebra <> :ma_scope:'-'_x not
+R5484:5484 Message_Algebra <> E constr
+R5488:5488 Strands <> k var
+R5486:5486 Strands <> h var
+R5470:5473 Message_Algebra <> :ma_scope:'-'_x not
+R5478:5478 Message_Algebra <> :ma_scope:'-'_x not
+R5474:5474 Message_Algebra <> K constr
+R5476:5477 Strands <> k' var
+R5453:5455 Message_Algebra <> inv defax
+R5459:5460 Strands <> k' var
+R5457:5457 Strands <> k var
+R5531:5537 Strands <> DStrand ind
+ind 5691:5706 <> PenetratorStrand
+constr 5732:5733 <> PM
+constr 5773:5774 <> PK
+constr 5814:5815 <> PC
+constr 5855:5856 <> PS
+constr 5896:5897 <> PE
+constr 5937:5938 <> PD
+R5711:5716 Strands <> strand def
+R5750:5765 Strands <> PenetratorStrand ind
+R5737:5743 Strands <> MStrand ind
+R5791:5806 Strands <> PenetratorStrand ind
+R5778:5784 Strands <> KStrand ind
+R5832:5847 Strands <> PenetratorStrand ind
+R5819:5825 Strands <> CStrand ind
+R5873:5888 Strands <> PenetratorStrand ind
+R5860:5866 Strands <> SStrand ind
+R5914:5929 Strands <> PenetratorStrand ind
+R5901:5907 Strands <> EStrand ind
+R5955:5970 Strands <> PenetratorStrand ind
+R5942:5948 Strands <> DStrand ind
+R5980:5995 Strands PenetratorStrand <> sec
+prf 6184:6195 <> xmit_vs_recv
+R6208:6211 Strands <> node def
+R6238:6242 Coq.Init.Logic <> False ind
+R6227:6230 Strands <> recv def
+R6232:6232 Strands <> n var
+R6216:6219 Strands <> xmit def
+R6221:6221 Strands <> n var
+ax 6393:6404 <> xmit_or_recv
+R6418:6421 Strands <> node def
+R6431:6434 Coq.Init.Logic <> :type_scope:x_'\/'_x not
+R6425:6428 Strands <> xmit def
+R6430:6430 Strands <> n var
+R6435:6438 Strands <> recv def
+R6440:6440 Strands <> n var
+prf 6495:6507 <> ssucc_not_ref
+R6520:6523 Strands <> node def
+R6541:6545 Coq.Init.Logic <> False ind
+R6528:6532 Strands <> ssucc ind
+R6536:6536 Strands <> n var
+R6534:6534 Strands <> n var
+prf 6614:6621 <> eq_nodes
+R6639:6642 Strands <> node def
+R6710:6712 Coq.Init.Logic <> :type_scope:x_'='_x not
+R6709:6709 Strands <> x var
+R6713:6713 Strands <> y var
+R6691:6693 Coq.Init.Logic <> :type_scope:x_'='_x not
+R6680:6687 Strands <> index_of def
+R6689:6689 Strands <> x var
+R6694:6701 Strands <> index_of def
+R6703:6703 Strands <> y var
+R6658:6660 Coq.Init.Logic <> :type_scope:x_'='_x not
+R6646:6654 Strands <> strand_of def
+R6656:6656 Strands <> x var
+R6661:6669 Strands <> strand_of def
+R6671:6671 Strands <> y var
+R6828:6844 Coq.Logic.Classical_Prop <> proof_irrelevance thm
+R6847:6848 Coq.Init.Peano <> lt def
+R6854:6859 Coq.Init.Datatypes <> length def
+R6828:6844 Coq.Logic.Classical_Prop <> proof_irrelevance thm
+R6847:6848 Coq.Init.Peano <> lt def
+R6854:6859 Coq.Init.Datatypes <> length def
+prf 6940:6951 <> ssucc_unique
+R6972:6975 Strands <> node def
+R7008:7010 Coq.Init.Logic <> :type_scope:x_'='_x not
+R7007:7007 Strands <> y var
+R7011:7011 Strands <> z var
+R6993:6997 Strands <> ssucc ind
+R7001:7001 Strands <> z var
+R6999:6999 Strands <> x var
+R6980:6984 Strands <> ssucc ind
+R6988:6988 Strands <> y var
+R6986:6986 Strands <> x var
+R7074:7081 Strands <> eq_nodes thm
+R7074:7081 Strands <> eq_nodes thm
+R7141:7152 Strands <> ssucc_unique thm
+prf 7221:7237 <> ssucc_same_strand
+R7257:7260 Strands <> node def
+R7289:7291 Coq.Init.Logic <> :type_scope:x_'='_x not
+R7277:7285 Strands <> strand_of def
+R7287:7287 Strands <> x var
+R7292:7300 Strands <> strand_of def
+R7302:7302 Strands <> y var
+R7264:7268 Strands <> ssucc ind
+R7272:7272 Strands <> y var
+R7270:7270 Strands <> x var
+R7380:7396 Strands <> ssucc_same_strand thm
+ax 7471:7484 <> smsg_on_strand
+R7521:7526 Coq.Lists.ListSet <> set_In def
+R7540:7540 Strands <> l var
+R7529:7535 Strands <> smsg_of def
+R7537:7537 Strands <> n var
+R7513:7515 Coq.Init.Logic <> :type_scope:x_'='_x not
+R7502:7510 Strands <> strand_of def
+R7512:7512 Strands <> n var
+R7516:7516 Strands <> l var
+ax 7613:7620 <> was_sent
+R7635:7638 Strands <> node def
+R7657:7663 Coq.Init.Logic <> :type_scope:'exists'_x_'..'_x_','_x not
+R7672:7674 Coq.Init.Logic <> :type_scope:'exists'_x_'..'_x_','_x not
+R7668:7671 Strands <> node def
+R7675:7685 Strands <> msg_deliver ind
+R7689:7689 Strands <> x var
+R7687:7687 Strands <> y var
+R7642:7645 Strands <> recv def
+R7647:7647 Strands <> x var
+ax 7727:7733 <> wf_prec
+R7736:7747 Coq.Init.Wf <> well_founded def
+R7749:7752 Strands <> prec def
+ax 7877:7888 <> default_smsg
+R7892:7895 Message_Algebra <> smsg ind
+ax 7908:7919 <> default_node
+R7923:7926 Strands <> node def
+ax 7939:7949 <> default_msg
+R7953:7955 Message_Algebra <> msg ind
+def 7970:7973 <> path
+R7985:7988 Coq.Init.Datatypes <> list ind
+R7991:7994 Coq.Init.Datatypes <> prod ind
+R8001:8003 Message_Algebra <> msg ind
+R7996:7999 Strands <> node def
+var 8073:8078 <> p_node
+R8082:8085 Strands <> node def
+var 8105:8110 <> r_node
+R8114:8117 Strands <> node def

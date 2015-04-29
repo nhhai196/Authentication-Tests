@@ -1,0 +1,20 @@
+title page
+
+
+In this paper we formally prove the correctness of two theorems about
+cryptographic protocol analysis by using the Coq proof assistant.  The
+theorems are known as the Authentication Tests in the strand space
+formalism.  With such tests, we can determine whether certain values
+remain secret so we can check whether certain security properties are
+achieved by a protocol.  Coq is a formal proof management system. It
+provides a formal language to express mathematical assertions,
+mechanically checks proofs of these assertions.  Coq works within the
+theory of the calculus of inductive constructions, which is a
+variation on the calculus of constructions. We first formalize strand
+spaces by giving definitions in Coq of the basic notions. Then we
+express the two authentication tests and give constructive proofs for
+them.
+
+- Related Work
+
+-Conclusion, Future Work
